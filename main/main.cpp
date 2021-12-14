@@ -53,7 +53,10 @@ void cpp_main()
     I2C.init(I2C_NUM_0, PIN_I2C_SDA, PIN_I2C_SCL);
     
     // Initialize the FPGA and complain if we can't
-    if (!FPGA.init(FPGA_SLAVE_ADDR)) printf(">>>>>> FAILED TO INITIALIZE FPGA <<<<<<\n");
+    //?if (!FPGA.init(FPGA_SLAVE_ADDR)) printf(">>>>>> FAILED TO INITIALIZE FPGA <<<<<<\n");
+
+    // Start up command handling engine
+    Engine.begin();
 
     // Find out if we should start the Wi-Fi in "Access-Point" mode
     bool start_as_ap = ProvButton.is_pressed()       ||

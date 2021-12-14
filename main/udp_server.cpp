@@ -37,9 +37,11 @@ static sockaddr_in& sockaddr_source = *(sockaddr_in*)&source_addr;
 // This contains the socket descriptor of the socket when it's open
 static int  sock = -1;
 
-// This is incoming UDP message
-static char input[2000];
+// We expect an incoming message to be no larger than this
+#define MAX_PACKET_SIZE 1024
 
+// This is a buffer of all incoming messages
+static unsigned char rolling_buffer[20000];
 
 //========================================================================================================= 
 // hard_shutdown() - Ensures that the listening socket and the server socket are closed
@@ -92,12 +94,18 @@ void CUDPServer::task()
         return;
     }
 
+    // The next incoming packet shold be placed at the start of the rolling buffer
+    unsigned char* next_in = rolling_buffer;
+
+    // This is how many bytes we have free in the buffer
+    uint32_t buffer_remaining = sizeof(rolling_buffer);
+
     // Tell the engineer that the socket is built and we're ready for incoming data
     printf(">>>> Waiting for incoming UDP messages <<<<\n");
     while (true)
     {
         // Wait for a message to arrive
-        int length = recvfrom(sock, input, sizeof(input) - 1, 0, (struct sockaddr *)&source_addr, &source_length);
+        int length = recvfrom(sock, next_in, buffer_remaining, 0, (struct sockaddr *)&source_addr, &source_length);
 
         // If that failed, tell the engineer
         if (length < 0)
@@ -110,10 +118,24 @@ void CUDPServer::task()
         inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, source_ip, sizeof(source_ip) - 1);
         
         // Tell the engineer pertinent details about the packet we just received
-        printf("Rcvd packet type %i (%4i) bytes from %s\n", *input, length, source_ip);
+        printf("Rcvd %4i bytes from %s\n", length, source_ip);
 
-        // Call the appropriate command handler
-        Engine.on_incoming_packet(input, length);
+        // Hand this packet to the I2C engine
+        Engine.handle_packet(next_in, length);
+
+        // Point to where the next incoming message gets stored
+        next_in += length;
+
+        // We now have fewer free bytes in the buffer
+        buffer_remaining -= length;
+
+        // If there's not enough room left in the buffer for an entire packet, wrap-around
+        // to the start of the buffer
+        if (buffer_remaining < MAX_PACKET_SIZE)
+        {
+            next_in = rolling_buffer;
+            buffer_remaining = sizeof rolling_buffer;
+        }
     }
 }
 //========================================================================================================= 
@@ -142,7 +164,7 @@ static void launch_task(void *pvParameters)
 //=========================================================================================================
 void CUDPServer::begin()
 {
-    xTaskCreatePinnedToCore(launch_task, "udp_server", 4096, this, DEFAULT_TASK_PRI, &m_task_handle, TASK_CPU);
+    xTaskCreatePinnedToCore(launch_task, "udp_server", 4096, this, TASK_PRIO_UDP, &m_task_handle, TASK_CPU);
 
     // The server is running!
     m_is_running = true;

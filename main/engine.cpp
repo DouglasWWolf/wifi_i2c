@@ -4,6 +4,146 @@
 #include "globals.h"
 
 
+enum command_t
+{
+    CMD_RESET_MSG = 0,
+    CMD_WRITE_REG = 1,
+    CMD_READ_REG  = 2    
+};
+
+
+//=========================================================================================================
+// launch_task() - Calls the "task()" routine in the specified object
+//
+// Passed: *pvParameters points to the object that we want to use to run the task
+//=========================================================================================================
+static void launch_task(void *pvParameters)
+{
+    // Fetch a pointer to the object that is going to run out task
+    CEngine* p_object = (CEngine*) pvParameters;
+    
+    // And run the task for that object!
+    p_object->task();
+}
+//=========================================================================================================
+
+
+//=========================================================================================================
+// start() - Starts the UDP server task
+//=========================================================================================================
+void CEngine::begin()
+{
+    // We don't have a most recent message ID
+    m_have_most_recent_msg_id = false;
+
+    // Create the queue that other threads will post messages to
+    m_event_queue = xQueueCreate(50, sizeof(packet_t));
+
+    // And start the task
+    xTaskCreatePinnedToCore(launch_task, "i2c_engine", 4096, this, DEFAULT_TASK_PRI, &m_task_handle, TASK_CPU);
+}
+//=========================================================================================================
+
+
+//=========================================================================================================
+// handle_packet() - Sends a notification of a packet to be handled
+//=========================================================================================================
+void CEngine::handle_packet(uint8_t* buffer, int length)
+{
+    packet_t message = {buffer, (uint16_t)length};
+
+    // Stuff this event into the event queue
+    xQueueSend(m_event_queue, &message, 0);
+}
+//=========================================================================================================
+
+
+//=========================================================================================================
+// task() - This is the thread that handles incoming messages
+//=========================================================================================================
+void CEngine::task()
+{
+    packet_t    packet;
+    
+    // Loop forever, waiting for packets to arrive
+    while (xQueueReceive(m_event_queue, &packet, portMAX_DELAY))
+    {
+        // Point to the incoming packet buffer
+        unsigned char* in = packet.buffer;
+
+        // Fetch the message ID
+        uint32_t msg_id = 0;
+        msg_id = (msg_id << 8) | *in++;
+        msg_id = (msg_id << 8) | *in++;
+        msg_id = (msg_id << 8) | *in++;
+        msg_id = (msg_id << 8) | *in++;
+
+        // If this is a reset message, forget that we have a most recent message ID
+        if (*in == CMD_RESET_MSG) m_have_most_recent_msg_id = false;
+
+        // If it's the same as our previously received message ID, ignore this message
+        if (m_have_most_recent_msg_id && msg_id == m_most_recent_msg_id) continue;
+
+        // This is now our most recent message ID
+        m_most_recent_msg_id = msg_id;
+        
+        // Keep track of the fact that we have a message ID
+        m_have_most_recent_msg_id = true;
+
+        // Fetch the command byte
+        unsigned char command = *in++;
+
+        printf("Rcvd msg ID %08X, command %i\n", msg_id, command);
+
+        reply(command);
+
+    }
+
+}
+//=========================================================================================================
+
+
+
+//=========================================================================================================
+// reply() - Sends a reply to the host
+//=========================================================================================================
+unsigned char reply_buffer[1024];
+void CEngine::reply(unsigned char command)
+{
+    // Point to the reply buffer
+    unsigned char* out = reply_buffer;
+
+    // Output the message ID
+    *out++ = (m_most_recent_msg_id >> 24);
+    *out++ = (m_most_recent_msg_id >> 16);
+    *out++ = (m_most_recent_msg_id >>  8);
+    *out++ = (m_most_recent_msg_id      );
+
+    // Output the command we are responding to
+    *out++ = command;
+
+    // Figure out how long the reply message is
+    int length = out - reply_buffer;
+
+    // Send the reply to the client
+    UDPServer.reply(reply_buffer, length);
+}
+//=========================================================================================================
+
+
+
+
+
+
+
+
+
+
+#if 0
+
+
+
+
 // We're going to count and display the number of full frame sets we receive
 int frame_set_count = 0;
 
@@ -148,3 +288,9 @@ void CEngine::send_status()
     UDPServer.reply(&status, sizeof status);
 }
 //=========================================================================================================
+
+
+
+
+
+#endif

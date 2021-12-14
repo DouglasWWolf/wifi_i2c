@@ -1,23 +1,17 @@
-#pragma once
 //=========================================================================================================
 // engine.h - Defines the engine that handles the incoming UDP packets
 //=========================================================================================================
-
+#pragma once
+#include "common.h"
 
 
 //=========================================================================================================
-// This is the structure of a command packet
+// This is the data descriptor that describes an incoming packet
 //=========================================================================================================
-struct command_t
+struct packet_t
 {
-    uint8_t tx_en;
-    uint8_t prf_sel;
-    uint8_t clk_sel;
-    uint8_t pt_sel;
-    uint8_t seq_loop_cnt;
-    uint8_t seq_sel;
-    uint8_t tx_dur_msb;
-    uint8_t tx_dur_lsb;
+    uint8_t*    buffer;
+    uint16_t    length;    
 };
 //=========================================================================================================
 
@@ -25,18 +19,35 @@ struct command_t
 class CEngine
 {
 public:
-    // Called once at program startup
-    void    init();
 
-    // When a new packet arrives via UDP, this routine gets called
-    void    on_incoming_packet(const char* packet, int length);
+    // Called once at program startup to start the thread
+    void    begin();
+
+    // Call this to handle an incoming packet
+    void    handle_packet(uint8_t* buffer, int length);
+
+public:
+
+    // Sends a reply to the most recently received message
+    void    reply(unsigned char command);
+
+    // This is the code that executes in it's own thread
+    void    task();
 
 protected:
-
-    // Sends a status message back to the client side
-    void    send_status();
 
     // A set of bitflags with 1 bit per packet type
     int     m_rcvd_flags;
 
+    // If this is true, we have a most recent message ID
+    bool        m_have_most_recent_msg_id;
+
+    // This is the most recent message we've received
+    uint32_t    m_most_recent_msg_id;
+    
+    // This is the handle of the currently running server task
+    TaskHandle_t m_task_handle;
+
+    // This is the queue that other threads will publish notifications to
+    xQueueHandle m_event_queue;
 };

@@ -10,6 +10,7 @@
 #define TASK_CPU          1
 #define DEFAULT_TASK_PRI  5
 #define TASK_PRIO_TCP     6
+#define TASK_PRIO_UDP     6
 #define TASK_PRIO_FLASH   9  // This has to be higher priority than all other tasks
 
 // This is a macro that can be used to check the size of structures at compile time
