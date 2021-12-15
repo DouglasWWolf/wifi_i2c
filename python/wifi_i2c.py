@@ -82,15 +82,25 @@ class Wifi_I2C:
     GET_FWREV_CMD    = 5
     GET_RSSI_CMD     = 6
 
+
+    # ------------------------------------------------------------------------------------------------------
+    # The constructor - Sets up our listening socket
+    # ------------------------------------------------------------------------------------------------------
+    def __init__(self, local_ip):
+
+        # Create a listener object and start the listening thread
+        self.listener = Listener(local_ip)
+    # ------------------------------------------------------------------------------------------------------
+
+
+
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
     #
     # Returns:  True if communication was established
     #           False if something goes awry
     # ------------------------------------------------------------------------------------------------------
-    def start(self, local_ip, server_ip, server_port = 0):
-
-        local_port = 0
+    def start(self, server_ip, server_port = 0):
 
         # If either of the port numbers is 0, use defaults
         if server_port == 0: server_port = 1182
@@ -98,38 +108,13 @@ class Wifi_I2C:
         # Save our server information
         self.server = (server_ip, server_port)
 
-        # Create a listener object
-        self.listener = Listener()
-
-        # Create a socket for the listener to use
-        self.listener.sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-        # Bind the listening socket
-        bound = False
-        for i in range(0, 300):
-            local_port = 30000 + i
-            try:
-                self.listener.sock.bind((local_ip, local_port))
-                bound = True
-            except OSError:
-                continue
-            break
-
-        # If we were unable to bind the socket to a port, complain about it
-        if not bound:
-            print("Can't find any available port to bind to")
-            return False
-
-        # Tell the listener object to start listening
-        self.listener.begin()
-
         # Create a socket for sending messages
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # Tell the server what local port to send responses to
         reply = None
         try:
-            reply = self.set_client_port(local_port)
+            reply = self.set_client_port(self.listener.port)
         except Exception:
             return False
 
@@ -384,10 +369,38 @@ class Wifi_I2C:
 # ==========================================================================================================
 class Listener(threading.Thread):
 
-    sock = None
+    sock        = None
+    port        = None
+    expected_id = None
+    event       = None
 
-    def __init__(self):
+    def __init__(self, local_ip):
+
+        # Call the threading base class constructor
         threading.Thread.__init__(self)
+
+        # Create a socket to listen on for incoming messages
+        self.sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+
+        # Bind the listening socket and start the listening thread
+        for i in range(0, 500):
+            self.port = 30000 + i
+            try:
+                self.sock.bind((local_ip, self.port))
+                self.begin()
+                return
+            except OSError:
+                pass
+
+        # Tell the outside world that we were unable to bind to a port
+        self.port = None
+
+        # Visibly complain that we can't find any port we can bind to!
+        print("Can't find any available port to bind to")
+    # ------------------------------------------------------------------------------------------------------
+
+
+
 
     # ---------------------------------------------------------------------------
     # begin() - Starts a thread and begins listening for incoming messages

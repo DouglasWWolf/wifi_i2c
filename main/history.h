@@ -14,7 +14,5 @@
 
 Add debug
 Add discovery feature?
-Add QUERY FIRMWARE VERSION
-add QUERY RSSI
 Add some sort of status counts that can be queried
 */

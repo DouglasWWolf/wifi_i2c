@@ -47,12 +47,12 @@ def blinker():
 if __name__ == '__main__':
 
     # Create the object that lets us control the I2C device via WiFi
-    device = Wifi_I2C()
+    # Parameter is the IP address of this computer's Wi-Fi interface
+    device = Wifi_I2C('192.168.50.196')
 
     # Start communicating .
-    #   1st param = IP address of our WiFi interface
-    #   2nd param = IP address that the ESP32 is listening on
-    if device.start('192.168.50.196', '192.168.50.229'):
+    # Parameter is the  IP address that the ESP32 is listening on
+    if device.start('192.168.50.229'):
         print("Started!")
     else:
         print("Failed to connect to ESP32")
