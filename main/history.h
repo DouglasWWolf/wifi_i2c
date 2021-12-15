@@ -14,5 +14,9 @@
 
 Add debug
 Add discovery feature
+Add QUERY FIRMWARE VERSION
+Add SUPPORT MULTIBYTE REGISTER VALUES
+Add DOCUMENTATION FOR PACKET FORMATS
+ADD read_reg_buffer to Python code
 Add some sort of status counts that can be queried
 */
