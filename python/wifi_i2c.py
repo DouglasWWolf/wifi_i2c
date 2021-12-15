@@ -1,3 +1,54 @@
+"""
+To use this class, do this at the top of your Python code:
+         from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
+
+Public API:
+
+    This documentation is somewhat simplified and is applicable to devices where the register numbers
+    are all 8-bits wide.   To use 16-bit or 32-bit register numbers, see the "reg_width" parameter in the
+    write_reg() and read_reg() API functions
+
+
+    ----------------------------------------------------------------------------------------------------------
+    Constructor of Wifi_I2C(local_ip_address)
+
+    Pass it either the IP address of your local machine, or None if connecting to the device in AP mode
+    ---------------------------------------------------------------------------------------------------------
+    start(server_ip, server_port)
+
+    Passed: server_ip   = The IP address of the server, or None if connecting in AP mode
+            server_port = The port number to connect to, or 0 to use the default (i.e., 1182)
+
+    Returns: True if a connection was established, False if no communication established
+    ---------------------------------------------------------------------------------------------------------
+    set_i2c_address(address)
+
+    Sets the 7-bit I2C address of the I2C device you want to talk to
+
+    Returns: nothing
+    ---------------------------------------------------------------------------------------------------------
+    write_reg(register_number, value)
+
+    Writes an integer value or a byte string to a register
+
+    Returns: nothing
+    ---------------------------------------------------------------------------------------------------------
+    write_reg([(reg1, val1), (reg2, val2), (reg3, val3), (reg4, val4) <etc>])
+
+    Writes values to multiple registers, all sent in a single packet
+
+    Returns: nothing
+    ---------------------------------------------------------------------------------------------------------
+    read_reg(register_number)
+
+    Returns: the value in the register
+    ---------------------------------------------------------------------------------------------------------
+
+
+
+
+"""
+
 import threading, time, socket
 
 # ==========================================================================================================
@@ -23,7 +74,7 @@ class Wifi_I2C_Ex(Exception):
         if type(message) is int and int(message) == -1:
             self.error = self.ERR_CONN_TIMEOUT
             self.string = "Connection timeout: no reply from server"
-            return;
+            return
 
         self.trans_id = message[0:3]
         self.command = int(message[4])
@@ -349,6 +400,10 @@ class Wifi_I2C:
         # if value is an int, convert it to one or more bytes
         if type(value) is int:
             value = value.to_bytes(reg_width, 'big');
+
+        # Convert a bytearray to a byte string
+        if type(value) is bytearray:
+            value = bytes(value)
 
         # If value is a byte string, build our return value from it
         if type(value) is bytes:
