@@ -7,9 +7,10 @@
 enum command_t
 {
     CMD_INIT_SEQ    = 0,
-    CMD_WRITE_REG   = 1,
-    CMD_READ_REG    = 2,
-    CMD_CLIENT_PORT = 3    
+    CMD_CLIENT_PORT = 1,
+    CMD_I2C_ADDR    = 2,    
+    CMD_WRITE_REG   = 3,
+    CMD_READ_REG    = 4
 };
 
 enum error_code_t
@@ -46,6 +47,9 @@ void CEngine::begin()
 
     // Create the queue that other threads will post messages to
     m_event_queue = xQueueCreate(50, sizeof(packet_t));
+
+    // A default address for a device on the I2C bus that we'll be talking to
+    m_i2c_address = 0x62;
 
     // And start the task
     xTaskCreatePinnedToCore(launch_task, "i2c_engine", 4096, this, DEFAULT_TASK_PRI, &m_task_handle, TASK_CPU);
@@ -124,6 +128,10 @@ void CEngine::task()
 
             case CMD_CLIENT_PORT:
                 handle_cmd_client_port(in, data_length);
+                break;
+
+            case CMD_I2C_ADDR:
+                handle_cmd_i2c_addr(in, data_length);
                 break;
         }
     }
@@ -220,6 +228,24 @@ void CEngine::handle_cmd_client_port(const uint8_t* data, int data_length)
     reply(ERR_NONE);
 }
 //=========================================================================================================
+
+
+
+//=========================================================================================================
+// i2c_addr() - Declares the I2C address of the device we want to talk to
+//=========================================================================================================
+void CEngine::handle_cmd_i2c_addr(const uint8_t* data, int data_length)
+{
+    // Set our internal I2C address
+    m_i2c_address = *data;
+
+    // Tell the client that everything worked
+    reply(ERR_NONE);
+}
+//=========================================================================================================
+
+
+
 
 
 

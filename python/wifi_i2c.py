@@ -75,9 +75,11 @@ class Wifi_I2C:
 
     # These are all of the commands we can send to the server
     INIT_SEQ_CMD     = 0
-    WRITE_REG_CMD    = 1
-    READ_REG_CMD     = 2
-    CLIENT_PORT_CMD  = 3
+    CLIENT_PORT_CMD  = 1
+    I2C_ADDR_CMD     = 2
+    WRITE_REG_CMD    = 3
+    READ_REG_CMD     = 4
+
 
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
