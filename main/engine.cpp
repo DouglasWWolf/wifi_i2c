@@ -11,6 +11,12 @@ enum command_t
     CMD_READ_REG  = 2    
 };
 
+enum error_code_t
+{
+    ERR_NONE          = 0,
+    ERR_NOT_ENUF_DATA = 1,
+    ERR_I2C_WRITE     = 2
+};
 
 //=========================================================================================================
 // launch_task() - Calls the "task()" routine in the specified object
@@ -68,6 +74,9 @@ void CEngine::task()
     // Loop forever, waiting for packets to arrive
     while (xQueueReceive(m_event_queue, &packet, portMAX_DELAY))
     {
+        // If there's not a transaction ID and command in the packet, ignore it
+        if (packet.length < 5) return;
+
         // Point to the incoming packet buffer
         unsigned char* in = packet.buffer;
 
@@ -91,12 +100,22 @@ void CEngine::task()
         m_have_most_recent_trans_id = true;
 
         // Fetch the command byte
-        unsigned char command = *in++;
+        m_command = *in++;
 
-        printf("Rcvd msg ID %08X, command %i\n", trans_id, command);
+        // The transaction ID and command took up 5 bytes.  This is how much is left
+        int data_length = packet.length - 5;
 
-        reply(command);
-
+        // Handle each type of command we know about
+        switch(m_command)
+        {
+            case CMD_INIT_SEQ:
+                reply(0);
+                break;
+            
+            case CMD_WRITE_REG:
+                handle_cmd_write_reg(in, data_length);
+                break;
+        }
     }
 
 }
@@ -105,10 +124,78 @@ void CEngine::task()
 
 
 //=========================================================================================================
+// handle_cmd_write_reg() - Writes data to one or more registers on the I2C device
+//=========================================================================================================
+void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
+{
+    while (data_length > 0)
+    {
+        // Fetch the register number we're writing to
+        int reg = *data++;
+
+        // Fetch the length of the data we're writing to the register
+        int reg_length = (data[0] << 8) | data[1];
+        data += 2;
+
+        // We have now have three fewer bytes of data in the buffer
+        data_length -=3;
+
+        // If there isn't enough data in the buffer to satisfy the register length, something is awry
+        if (data_length < reg_length)
+        {
+            printf("Register 0x%02X needs %i bytes.  Not enough data!\n", reg, data_length);
+            reply(ERR_NOT_ENUF_DATA);
+            return;
+        }
+
+        // If we can't write to the I2C, it's an error
+        if (!i2c_write(reg, data, reg_length))
+        {
+            reply(ERR_I2C_WRITE, reg);
+            return;
+        }
+        
+        // Point to the next register entry in our input packet
+        data_length -= reg_length;
+        data        += reg_length;
+    }
+
+    // Tell the client that everything worked
+    reply(ERR_NONE);
+}
+//=========================================================================================================
+
+
+
+//=========================================================================================================
+// i2c_write() - Writes data to a device register via I2C
+//=========================================================================================================
+bool CEngine::i2c_write(int reg, const uint8_t* data, int length)
+{
+    printf("Writing %i bytes ", length);
+    int plen = (length < 5) ? length : 5;
+    for (int i=0; i<plen; ++i) printf("[%02X]", data[i]);
+    printf(" to register 0x%02X\n", reg);
+    
+    return true;
+}
+//=========================================================================================================
+
+
+
+
+//=========================================================================================================
 // reply() - Sends a reply to the host
 //=========================================================================================================
 unsigned char reply_buffer[1024];
-void CEngine::reply(unsigned char command)
+
+void CEngine::reply(int error_code, int p1)
+{
+    unsigned char data = (unsigned char)p1;
+    reply(error_code, &data, 1);
+}
+
+void CEngine::reply(int error_code, const uint8_t* data, int data_len)
 {
     // Point to the reply buffer
     unsigned char* out = reply_buffer;
@@ -120,7 +207,20 @@ void CEngine::reply(unsigned char command)
     *out++ = (m_most_recent_trans_id      );
 
     // Output the command we are responding to
-    *out++ = command;
+    *out++ = m_command;
+
+    // Output the error_code  
+    *out++ = error_code;
+
+    // If there's reply data, stuff it into the buffer
+    if (data && data_len)
+    {
+        // Copy the reply data into the buffer
+        memcpy(out, data, data_len);
+
+        // Keep track of where the end of the buffer is
+        out += data_len;
+    }
 
     // Figure out how long the reply message is
     int length = out - reply_buffer;

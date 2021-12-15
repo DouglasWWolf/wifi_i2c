@@ -1,6 +1,48 @@
 import threading, time, socket
 
 # ==========================================================================================================
+# Exception class for error reporting
+# ==========================================================================================================
+class Wifi_I2C_Ex(Exception):
+
+    trans_id   = None
+    command    = None
+    error_code = None
+    register   = None
+    string     = ""
+
+    ERR_NONE          = 0
+    ERR_NOT_ENUF_DATA = 1
+    ERR_I2C_WRITE     = 2
+
+    def __init__(self, message):
+        self.trans_id = message[0:3]
+        self.command = int(message[4])
+        self.error_code = int(message[5])
+
+        # If there are at least 7 bytes in the message, assume the 7th byte is a register
+        if len(message) > 6:
+            self.register = int(message[6])
+
+        if self.error_code == self.ERR_NONE:
+            self.string = "No error"
+            return
+
+        if self.error_code == self.ERR_NOT_ENUF_DATA:
+            self.string = ("On register %i, not enough data" % self.register)
+            return
+
+        if self.error_code == self.ERR_I2C_WRITE:
+            self.string = ("On register %i, I2C write error" % self.register)
+            return
+
+        self.string = "Unknown error: "+str(self.error_code)
+# ==========================================================================================================
+
+
+
+
+# ==========================================================================================================
 # wifi_i2c - Manages communications with ESP32 wifi-i2c server
 # ==========================================================================================================
 class Wifi_I2C:
@@ -20,6 +62,9 @@ class Wifi_I2C:
 
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
+    #
+    # Returns:  True if communication was established
+    #           False if something goes awry
     # ------------------------------------------------------------------------------------------------------
     def start(self, local_ip, local_port, server_ip, server_port):
 
@@ -49,8 +94,15 @@ class Wifi_I2C:
         # Create a socket for sending messages
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        # Send the "Start a new connection" message, and wait for the reply
-        return self.send_message(self.INIT_SEQ_CMD)
+        # Try an "Init Sequence" transaction
+        reply = None
+        try:
+            reply = self.send_message(self.INIT_SEQ_CMD)
+        except Exception:
+            return False
+
+        # If we get here, we have communication with our Wi-Fi device!
+        return True
     # ------------------------------------------------------------------------------------------------------
 
 
@@ -62,7 +114,7 @@ class Wifi_I2C:
     # register_list can be:
     #   [(register, value), (register, value), (register, value) (etc)]
     # ------------------------------------------------------------------------------------------------------
-    def write_reg(self, register_list, value):
+    def write_reg(self, register_list, value = None):
 
         # Get the register data as a stream of bytes
         data = self.build_register_data(register_list, value)
@@ -80,6 +132,9 @@ class Wifi_I2C:
 
     # ------------------------------------------------------------------------------------------------------
     # send_message() - Sends a message to the server, making multiple attempts to get a reply
+    #
+    # Returns: response bytes
+    #   or None = Transaction was good, but no response data
     # ------------------------------------------------------------------------------------------------------
     def send_message(self, command, data = None):
 
@@ -95,8 +150,10 @@ class Wifi_I2C:
 
         # If there is data to go with the message, append it
         if data:
+            if type(data) is bytearray:
+                data = bytes(data)
             if not type(data) is bytes:
-                raise TypeError("send_message: data must be bytes")
+                raise TypeError("send_message: data must be bytes, not "+ str(type(data)))
             message = message + data
 
         # So far we don't have a reply message
@@ -114,10 +171,24 @@ class Wifi_I2C:
             # Fetch the reply
             reply = self.listener.wait_for_reply(1)
 
+            # If we have a reply, we don't have to retry
             if reply: break
 
-        # Tell the caller what reply we got
-        return reply
+        # If there's an error code in the reply raise an exception
+        if reply[5] != 0: raise Wifi_I2C_Ex(reply)
+
+
+        # Tell the caller what reply we got.  A message is:
+        #   4 bytes of transaction ID
+        #   1 byte of command
+        #   1 byte of error code
+        #   optional data
+
+        # If there's no reply data, return None
+        if len(reply) <= 6: return None
+
+        # Otherwise, return the reply data
+        return reply[6:]
     # ------------------------------------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------------------------------
@@ -250,8 +321,8 @@ class Listener(threading.Thread):
             # We are no longer expecting a message
             self.expected_id = None
 
-            # Save the incoming message (sans ID) so the other thread can retrieve it
-            self.incoming = message[4:]
+            # Save the incoming message so the other thread can retrieve it
+            self.incoming = message
 
             # Tell the other thread that his reply arrived
             self.event.set()

@@ -1,5 +1,5 @@
 import socket, time
-from wifi_i2c import Wifi_I2C
+from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
 
 fpga = Wifi_I2C()
 
@@ -11,7 +11,13 @@ else:
     quit()
 
 print("Sending register")
-fpga.write_reg(0x15, 12)
+
+try:
+    fpga.write_reg(0x15, 12)
+    config = [(0x10, 10), (0x20, 20), (0x30, 30), (0x40, 40)]
+    fpga.write_reg(config)
+except Wifi_I2C_Ex as e:
+    print(e.string)
 
 quit()
 
