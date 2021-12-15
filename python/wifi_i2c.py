@@ -25,6 +25,8 @@ Public API:
 
     Sets the 7-bit I2C address of the I2C device you want to talk to
 
+    address 0 is a virtual device with 256 1-byte registers
+
     Returns: nothing
     ---------------------------------------------------------------------------------------------------------
     write_reg(register_number, value)
@@ -51,8 +53,6 @@ Public API:
 
     Returns: The signal strength as measured by the server
     ---------------------------------------------------------------------------------------------------------
-
-
 
 """
 
