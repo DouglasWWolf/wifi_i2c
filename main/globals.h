@@ -13,7 +13,6 @@
 #include "i2c_bus.h"
 #include "udp_server.h"
 #include "engine.h"
-#include "fpga.h"
 
 extern CSystem     System;
 extern CNVS        NVS;
@@ -26,7 +25,7 @@ extern CProvButton ProvButton;
 extern CI2C        I2C;
 extern CUDPServer  UDPServer;
 extern CEngine     Engine;
-extern CFPGA       FPGA;
+
 
 
 uint32_t crc32(void *buf, size_t len);
