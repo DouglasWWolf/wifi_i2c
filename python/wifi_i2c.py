@@ -15,8 +15,16 @@ class Wifi_I2C_Ex(Exception):
     ERR_NOT_ENUF_DATA = 1
     ERR_I2C_WRITE     = 2
     ERR_I2C_READ      = 3
+    ERR_CONN_TIMEOUT  = 99
 
     def __init__(self, message):
+
+        # If this is a timeout error...
+        if type(message) is int and int(message) == -1:
+            self.error = self.ERR_CONN_TIMEOUT
+            self.string = "Connection timeout: no reply from server"
+            return;
+
         self.trans_id = message[0:3]
         self.command = int(message[4])
         self.error_code = int(message[5])
@@ -61,6 +69,9 @@ class Wifi_I2C:
 
     # This will be a Listener object
     listener = None
+
+    # This is the socket we'll be transmitting on
+    sock = None
 
     # These are all of the commands we can send to the server
     INIT_SEQ_CMD     = 0
@@ -204,6 +215,9 @@ class Wifi_I2C:
         # So far we don't have a reply message
         reply = None
 
+        # We've not yet received a reply from the server
+        reply_rcvd = False
+
         # We're going to make five attempts to get a reply
         for attempt in range(0, 5):
 
@@ -217,7 +231,13 @@ class Wifi_I2C:
             reply = self.listener.wait_for_reply(1)
 
             # If we have a reply, we don't have to retry
-            if reply: break
+            if reply:
+                reply_rcvd = True
+                break
+
+        # If we didn't receive a reply, that's an error
+        if not reply_rcvd: raise Wifi_I2C_Ex(-1)
+
 
         # If there's an error code in the reply raise an exception
         if reply[5] != 0: raise Wifi_I2C_Ex(reply)

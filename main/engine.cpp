@@ -89,8 +89,6 @@ void CEngine::task()
         trans_id = (trans_id << 8) | *in++;
         trans_id = (trans_id << 8) | *in++;
 
-        printf("Recvd trans %i, cmd %i\n", trans_id, *in);
-
         // If this is a init-sequence message, forget that we have a most recent message ID
         if (*in == CMD_INIT_SEQ || *in == CMD_CLIENT_PORT) m_have_most_recent_trans_id = false;
 
