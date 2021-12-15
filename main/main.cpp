@@ -51,9 +51,6 @@ void cpp_main()
 
     // Configure the I2C bus.   This must be done before initializing I2C peripherals
     I2C.init(I2C_NUM_0, PIN_I2C_SDA, PIN_I2C_SCL);
-    
-    // Initialize the FPGA and complain if we can't
-    //?if (!FPGA.init(FPGA_SLAVE_ADDR)) printf(">>>>>> FAILED TO INITIALIZE FPGA <<<<<<\n");
 
     // Start up command handling engine
     Engine.begin();

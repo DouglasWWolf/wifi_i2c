@@ -94,6 +94,59 @@ bool  CI2C::read(int i2c_address, void* vp_data, int length)
 //=========================================================================================================
 
 
+
+//=========================================================================================================
+// write() - A conveience method that writes a stream of data to a register
+//           an I2C device
+//
+// Passed: i2c_address = The I2C address of the device
+//         reg         = The register number we want to write to
+//         reg_width   = The width of that register number in bytes
+//         data        = The source of the data to write
+//         data_length = How many bytes of data to write
+//
+// Returns: 'true' if the I2C write operation was successful, otherwise 'false'
+//=========================================================================================================
+bool  CI2C::write(int i2c_address, int reg, int reg_width, void* data, int data_length)
+{
+    // Get our data pointer as a unsigned char*    
+    const uint8_t* to_send = (const uint8_t*) data;
+    
+    // Allocate an I2C command buffer for the write operation
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+
+    // Initialize the write-operation buffer
+    i2c_master_start(cmd);
+
+    // Tell the I2C bus that this is going to be a write operation to the specified device
+    i2c_master_write_byte(cmd, i2c_address << 1 | I2C_MASTER_WRITE, true);
+
+    // Buffer up the register number
+    if (reg_width >= 4) i2c_master_write_byte(cmd, reg >> 24, true);
+    if (reg_width >= 3) i2c_master_write_byte(cmd, reg >> 16, true);
+    if (reg_width >= 2) i2c_master_write_byte(cmd, reg >>  8, true);
+    if (reg_width >= 1) i2c_master_write_byte(cmd, reg      , true);
+
+    // Buffer up the data we want to send
+    while (data_length--) i2c_master_write_byte(cmd, *to_send++ , true);
+
+    // Finalize the command buffer
+    i2c_master_stop(cmd);
+ 
+    // Perform the I2C write commands
+    bool status = I2C.perform(cmd);
+
+    // Free up the resources we allocated earlier
+    i2c_cmd_link_delete(cmd);
+ 
+    // Tell the caller whether this I2C write operation worked
+    return status;
+}
+//=========================================================================================================
+
+
+
+
 //=========================================================================================================
 // write() - A conveience method that writes one or two integer values of arbitrary length to the 
 //           an I2C device

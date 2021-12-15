@@ -128,6 +128,20 @@ class Wifi_I2C:
 
 
     # ------------------------------------------------------------------------------------------------------
+    # set_i2c_address() - Tells the server the I2C address of the device to talk to
+    # ------------------------------------------------------------------------------------------------------
+    def set_i2c_address(self, address):
+
+        # Convert the address to a byte
+        address = address.to_bytes(1, 'big')
+
+        # Send the command to the server
+        return self.send_message(self.I2C_ADDR_CMD, address)
+    # ------------------------------------------------------------------------------------------------------
+
+
+
+    # ------------------------------------------------------------------------------------------------------
     # write_reg() - Writes values to a register on the I2C device
     #
     # register_list is an int and value is an int or byte-string

@@ -119,11 +119,11 @@ void CEngine::task()
                 break;
             
             case CMD_WRITE_REG:
-                handle_cmd_write_reg(in, data_length);
+                handle_cmd_write_reg(1, in, data_length);
                 break;
 
             case CMD_READ_REG:
-                handle_cmd_read_reg(in, data_length);
+                handle_cmd_read_reg(1, in, data_length);
                 break;
 
             case CMD_CLIENT_PORT:
@@ -143,20 +143,29 @@ void CEngine::task()
 
 //=========================================================================================================
 // handle_cmd_write_reg() - Writes data to one or more registers on the I2C device
+//
+// Passed:  width       = The width, in bytes of a register number
+//          data        = Pointer to the buffer full of register-write commands
+//          data_length = The number of bytes in the data buffer
 //=========================================================================================================
-void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
+void CEngine::handle_cmd_write_reg(int width, uint8_t* data, int data_length)
 {
+    int reg, reg_length, w;
+
     while (data_length > 0)
     {
+        reg = reg_length = 0;
+        w = width;
+
         // Fetch the register number we're writing to
-        int reg = *data++;
+        while (w--) reg = (reg << 8) | *data++;
 
-        // Fetch the length of the data we're writing to the register
-        int reg_length = (data[0] << 8) | data[1];
-        data += 2;
+        // Fetch the length of the data we're going to read from the register
+        reg_length = (reg_length << 8) | *data++;
+        reg_length = (reg_length << 8) | *data++;
 
-        // We have now have three fewer bytes of data in the buffer
-        data_length -=3;
+        // We have now have fewer bytes of data in the buffer
+        data_length = data_length - width - 2;
 
         // If there isn't enough data in the buffer to satisfy the register length, something is awry
         if (data_length < reg_length)
@@ -188,16 +197,22 @@ void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
 
 //=========================================================================================================
 // handle_cmd_write_read() - Writes data to one or more registers on the I2C device
+//
+// Passed:  width       = The width, in bytes of a register number
+//          data        = Pointer to buffer that says how many bytes to read
+//          data_length = Length of that buffer (we don't need it)
 //=========================================================================================================
 unsigned char read_buffer[1024];
-void CEngine::handle_cmd_read_reg(const uint8_t* data, int data_length)
+void CEngine::handle_cmd_read_reg(int width, const uint8_t* data, int data_length)
 {
+    int reg = 0, reg_length = 0;
+
     // Fetch the register number we're reading from
-    int reg = *data++;
+    while (width--) reg = (reg << 8) | *data++;
 
     // Fetch the length of the data we're going to read from the register
-    int reg_length = (data[0] << 8) | data[1];
-    data += 2;
+    reg_length = (reg_length << 8) | *data++;
+    reg_length = (reg_length << 8) | *data++;
 
     // If we can't read from the I2C, it's an error
     if (!i2c_read(reg, read_buffer, reg_length))
@@ -254,12 +269,29 @@ void CEngine::handle_cmd_i2c_addr(const uint8_t* data, int data_length)
 //=========================================================================================================
 bool CEngine::i2c_read(int reg, uint8_t* data, int length)
 {
-    printf("Reading %i bytes from register 0x%02x\n", length, reg);
+    bool status;
 
-    for (int i=0; i<length;++i) data[i] = 0x80 + i;
+    // Write the address of the byte that we wish to read
+    status = I2C.write(m_i2c_address, reg, 1);
 
-    if (reg == 0x50) return false;
+    // If that fails, complain
+    if (!status) 
+    {
+        printf("I2C write failed on register 0x%02X for I2C device 0x%02X\n", reg, m_i2c_address);
+        return false;
+    }
 
+    // And read the result
+    status = I2C.read(m_i2c_address, data, length);
+
+    // If that fails, complain
+    if (!status) 
+    {
+        printf("I2C read failed on register 0x%02X for I2C device 0x%02X\n", reg, m_i2c_address);
+        return false;
+    }
+
+    // Tell the caller all is well
     return true;
 }
 //=========================================================================================================
@@ -270,13 +302,24 @@ bool CEngine::i2c_read(int reg, uint8_t* data, int length)
 //=========================================================================================================
 // i2c_write() - Writes data to a device register via I2C
 //=========================================================================================================
-bool CEngine::i2c_write(int reg, const uint8_t* data, int length)
+bool CEngine::i2c_write(int reg, uint8_t* data, int length)
 {
-    printf("Writing %i bytes ", length);
-    int plen = (length < 5) ? length : 5;
-    for (int i=0; i<plen; ++i) printf("[%02X]", data[i]);
-    printf(" to register 0x%02X\n", reg);
-    
+    bool status;
+
+    printf("Writing 0x%02X to register 0x%02X\n", *data, reg);
+
+
+    // Write to the I2C device
+    status = I2C.write(m_i2c_address, reg, 1, data, length);
+
+    // If that fails, complain
+    if (!status) 
+    {
+        printf("I2C write failed on register 0x%02X for I2C device 0x%02X\n", reg, m_i2c_address);
+        return false;
+    }
+
+    // Tell the caller all is well
     return true;
 }
 //=========================================================================================================

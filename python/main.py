@@ -1,28 +1,27 @@
 import socket, time
 from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
 
-fpga = Wifi_I2C()
+device = Wifi_I2C()
 
-rc = fpga.start('192.168.50.196', 12345, '192.168.50.229', 0)
-if rc:
+if device.start('192.168.50.196', 12345, '192.168.50.229', 0):
     print("Started!")
 else:
-    print("Failed!")
+    print("Failed to connect to ESP32")
     quit()
 
-print("Sending register")
 
 try:
-    fpga.write_reg(0x15, 12)
-    config = [(0x10, 10), (0x20, 20), (0x30, 30), (0x40, 40)]
-    fpga.write_reg(config)
+    device.set_i2c_address(0x23)
+    device.write_reg(0, 0x1F)
+    device.write_reg(9, 0)
+    for i in range(0,10):
+        val = device.read_reg(i, 1)
 
-    val = fpga.read_reg(0x10);
-    print("Read from 0x10", val)
-
-    val = fpga.read_reg(0x50)
-    print("Read from 0x50", val)
-
+    while True:
+        device.write_reg(9, 64)
+        time.sleep(.05)
+        device.write_reg(9, 0)
+        time.sleep(.05)
 
 
 except Wifi_I2C_Ex as e:
