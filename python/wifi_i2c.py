@@ -29,7 +29,7 @@ Public API:
     ---------------------------------------------------------------------------------------------------------
     write_reg(register_number, value)
 
-    Writes an integer value or a byte string to a register
+    Writes an integer value or a bytearray or a byte string to a register
 
     Returns: nothing
     ---------------------------------------------------------------------------------------------------------
@@ -41,9 +41,16 @@ Public API:
     ---------------------------------------------------------------------------------------------------------
     read_reg(register_number)
 
-    Returns: the value in the register
+    Returns: the integer value in the register
     ---------------------------------------------------------------------------------------------------------
+    get_firmware_rev()
 
+    Returns: The firmware revision as an integer
+    ---------------------------------------------------------------------------------------------------------
+    get_rssi()
+
+    Returns: The signal strength as measured by the server
+    ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -264,12 +271,13 @@ class Wifi_I2C:
 
 
 
-
-
-
+    # <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     # <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     # From here on down are methods that are private to this class
     # <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    # <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+
 
     # ------------------------------------------------------------------------------------------------------
     # set_client_port() - Tells the server which UDP port to send responses to
@@ -314,9 +322,6 @@ class Wifi_I2C:
         # So far we don't have a reply message
         reply = None
 
-        # We've not yet received a reply from the server
-        reply_rcvd = False
-
         # We're going to make five attempts to get a reply
         for attempt in range(0, 5):
 
@@ -330,12 +335,10 @@ class Wifi_I2C:
             reply = self.listener.wait_for_reply(1)
 
             # If we have a reply, we don't have to retry
-            if reply:
-                reply_rcvd = True
-                break
+            if reply: break
 
         # If we didn't receive a reply, that's an error
-        if not reply_rcvd: raise Wifi_I2C_Ex(-1)
+        if not reply: raise Wifi_I2C_Ex(-1)
 
 
         # If there's an error code in the reply raise an exception
@@ -355,6 +358,7 @@ class Wifi_I2C:
         return reply[6:]
     # ------------------------------------------------------------------------------------------------------
 
+
     # ------------------------------------------------------------------------------------------------------
     # build_register_data() - Returns a string of bytes built from an input
     #
@@ -367,41 +371,31 @@ class Wifi_I2C:
 
         data = bytearray()
 
-        # Get register width as a byte
-        reg_length = reg_width.to_bytes(1, 'big')
-
         # If register is a list of values...
         if type(register_list) is list:
 
             # Loop through each tuple in the list of values
             for register, value in register_list:
-
-                # If value is an integer, convert it to bytes
-                if type(value) is int:
-                    value = value.to_bytes(reg_width, "big")
-
-                # Values must be integers or bytes
-                if not type(value) is bytes:
-                    raise TypeError("register values must be int or bytes")
-
-                # Get the value length as bytes
-                value_length = len(value).to_bytes(2, 'big')
-
-                # Convert the register into one or more bytes
-                register = register.to_bytes(reg_width, 'big')
-
-                # Append this register definition to our data string
-                data = data + reg_length + register + value_length + value
+                data = data + self.build_one_register_string(register, value, reg_width)
 
             # We built a byte string from a list of tuples.  Return it
             return bytes(data)
 
+        # Otherwise, build the string for the one single register number the caller provided
+        return self.build_one_register_string(register_list, value, reg_width)
+    # ------------------------------------------------------------------------------------------------------
+
+
+    # ------------------------------------------------------------------------------------------------------
+    # build_one_register_string() - Builds the register string for a single register number and value
+    # ------------------------------------------------------------------------------------------------------
+    def build_one_register_string(self, reg_number, value, reg_width):
 
         # if value is an int, convert it to one or more bytes
         if type(value) is int:
-            value = value.to_bytes(reg_width, 'big');
+            value = value.to_bytes(reg_width, 'big')
 
-        # Convert a bytearray to a byte string
+        # If value is a bytearray, convert it to a bytes string
         if type(value) is bytearray:
             value = bytes(value)
 
@@ -410,13 +404,18 @@ class Wifi_I2C:
             value_length = len(value).to_bytes(2, 'big')
 
             # Convert the register number to one or more bytes
-            register = register_list.to_bytes(reg_width, 'big');
+            reg_number= reg_number.to_bytes(reg_width, 'big')
 
-            return reg_length + register + value_length + value
+            # Convert register width to one byte
+            reg_width = reg_width.to_bytes(1, 'big')
+
+            # Hand the caller the resulting byte string
+            return reg_width + reg_number + value_length + value
 
         # We'll get here if 'value' wasn't an integer or byte string
         raise TypeError("register values must be int or bytes")
     # ------------------------------------------------------------------------------------------------------
+
 
 
 # ==========================================================================================================
@@ -434,6 +433,7 @@ class Listener(threading.Thread):
     port        = None
     expected_id = None
     event       = None
+    incoming    = None
 
     def __init__(self, local_ip=None):
 
@@ -497,6 +497,8 @@ class Listener(threading.Thread):
 
     # ---------------------------------------------------------------------------
     # wait_for_reply() - Waits for a reply to a message
+    #
+    # Returns either None or a byte-string
     # ---------------------------------------------------------------------------
     def wait_for_reply(self, seconds):
 
@@ -521,10 +523,10 @@ class Listener(threading.Thread):
             message, _ = self.sock.recvfrom(1024)
 
             # What's the message ID of this message?
-            msg_id = message[0:4]
+            trans_id = message[0:4]
 
-            # If this was an unexpected message ID, ignore it
-            if msg_id != self.expected_id: continue
+            # If this was an unexpected transaction ID, ignore it
+            if trans_id != self.expected_id: continue
 
             # We are no longer expecting a message
             self.expected_id = None

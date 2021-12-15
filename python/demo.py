@@ -47,7 +47,7 @@ def blinker():
 if __name__ == '__main__':
 
     # Are we connecting via a router?
-    router = False
+    router = True
 
     if router:
         local_ip = "192.168.50.196"

@@ -21,7 +21,7 @@ def test():
         val = device.read_reg(reg, 1)
         print("Register", reg, "has value", val)
 
-    device.write_reg(10, b'\x01\x03\x05\x07')
+    device.write_reg([(10, 0x10), (11, 0x11), (12, 0x12), (13, 0x13)])
 
     print()
     for i in range(0,10):
@@ -35,7 +35,7 @@ def test():
 # Execution starts here
 #===========================================================================
 if __name__ == '__main__':
-    router = False
+    router = True
 
     if router:
         local_ip = "192.168.50.196"
