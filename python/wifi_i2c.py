@@ -125,7 +125,6 @@ class Wifi_I2C:
         # Create a socket for sending messages
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        print("Bound to local port", local_port)
         # Tell the server what local port to send responses to
         reply = None
         try:
