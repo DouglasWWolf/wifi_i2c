@@ -156,7 +156,16 @@ void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
 {
     int reg, write_length;
 
-     while (data_length > 0)
+    //---------------------------------------------------------------
+    // Format of a "write_register" command
+    // 1 Byte that defines how many bytes wide a register number is
+    // n Bytes of a register number
+    // 2 Bytes that define how much data to write
+    // n Bytes of data
+    //---------------------------------------------------------------
+
+
+    while (data_length > 0)
     {
         reg = write_length = 0;
 
@@ -205,7 +214,7 @@ void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
 
 
 //=========================================================================================================
-// handle_cmd_read+reg() - Writes data to one or more registers on the I2C device
+// handle_cmd_read_reg() - Writes data to one or more registers on the I2C device
 //
 // Passed:  data        = Pointer to buffer that says how many bytes to read
 //          data_length = Length of that buffer (we don't need it)
@@ -213,6 +222,14 @@ void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
 unsigned char read_buffer[1024];
 void CEngine::handle_cmd_read_reg(const uint8_t* data, int data_length)
 {
+
+    //---------------------------------------------------------------
+    // Format of a "read_register" command
+    // 1 Byte that defines how many bytes wide a register number is
+    // n Bytes of a register number
+    // 2 Bytes that define how much data to read
+    //---------------------------------------------------------------
+
     int reg = 0;
     int read_length = 0;
 
