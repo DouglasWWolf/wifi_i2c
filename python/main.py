@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     # Start communicating .
     #   1st param = IP address of our WiFi interface
-    #   2nd param = IP address of the ESP32 is listening on
+    #   2nd param = IP address that the ESP32 is listening on
     if device.start('192.168.50.196', '192.168.50.229'):
         print("Started!")
     else:
