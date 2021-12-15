@@ -2,14 +2,18 @@ import socket, time
 from wifi_i2c import Wifi_I2C
 
 fpga = Wifi_I2C()
+
 rc = fpga.start('192.168.50.196', 0, '192.168.50.229', 0)
 if rc:
     print("Started!")
 else:
     print("Failed!")
+    quit()
+
+print("Sending register")
+fpga.write_reg(0x15, 12)
 
 quit()
-
 
 data = bytearray()
 frame0 = bytearray()

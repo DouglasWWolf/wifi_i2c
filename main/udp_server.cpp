@@ -199,6 +199,8 @@ void CUDPServer::reply(void* data, int length)
     // We want to send our reply back to the same port number we're listening on
     sockaddr_source.sin_port = htons(SERVER_PORT);
 
+    printf("Sending reply\n");
+
     // Send the message back
     int err = sendto(sock, data, length, 0, (struct sockaddr *)&source_addr, sizeof source_addr);
 

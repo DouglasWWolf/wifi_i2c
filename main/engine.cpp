@@ -6,7 +6,7 @@
 
 enum command_t
 {
-    CMD_RESET_MSG = 0,
+    CMD_INIT_SEQ  = 0,
     CMD_WRITE_REG = 1,
     CMD_READ_REG  = 2    
 };
@@ -78,8 +78,8 @@ void CEngine::task()
         msg_id = (msg_id << 8) | *in++;
         msg_id = (msg_id << 8) | *in++;
 
-        // If this is a reset message, forget that we have a most recent message ID
-        if (*in == CMD_RESET_MSG) m_have_most_recent_msg_id = false;
+        // If this is a init-sequence message, forget that we have a most recent message ID
+        if (*in == CMD_INIT_SEQ) m_have_most_recent_msg_id = false;
 
         // If it's the same as our previously received message ID, ignore this message
         if (m_have_most_recent_msg_id && msg_id == m_most_recent_msg_id) continue;

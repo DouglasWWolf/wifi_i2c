@@ -1,5 +1,5 @@
 import threading, time, socket
-  
+
 # ==========================================================================================================
 # wifi_i2c - Manages communications with ESP32 wifi-i2c server
 # ==========================================================================================================
@@ -13,6 +13,10 @@ class Wifi_I2C:
 
     # This will be a Listener object
     listener = None
+
+    # These are all of the commands we can send to the server
+    INIT_SEQ_CMD  = 0
+    WRITE_REG_CMD = 1
 
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
@@ -46,14 +50,25 @@ class Wifi_I2C:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # Send the "Start a new connection" message, and wait for the reply
-        return self.send_message(0)
+        return self.send_message(self.INIT_SEQ_CMD)
     # ------------------------------------------------------------------------------------------------------
 
 
     # ------------------------------------------------------------------------------------------------------
     # write_reg() - Writes values to a register on the I2C device
+    #
+    # register_list is an int and value is an int or byte-string
+    #
+    # register_list can be:
+    #   [(register, value), (register, value), (register, value) (etc)]
     # ------------------------------------------------------------------------------------------------------
-    def write_reg(self):
+    def write_reg(self, register_list, value):
+
+        # Get the register data as a stream of bytes
+        data = self.build_register_data(register_list, value)
+
+        # Send the command to the server
+        return self.send_message(self.WRITE_REG_CMD, data)
     # ------------------------------------------------------------------------------------------------------
 
 
@@ -76,8 +91,13 @@ class Wifi_I2C:
 
         # Build the message we're about to send'
         message = id
-        message.append(command)
-        if data: message = message + bytes(data)
+        message = message + command.to_bytes(1, 'big')
+
+        # If there is data to go with the message, append it
+        if data:
+            if not type(data) is bytes:
+                raise TypeError("send_message: data must be bytes")
+            message = message + data
 
         # So far we don't have a reply message
         reply = None
@@ -99,6 +119,56 @@ class Wifi_I2C:
         # Tell the caller what reply we got
         return reply
     # ------------------------------------------------------------------------------------------------------
+
+    # ------------------------------------------------------------------------------------------------------
+    # build_register_data() - Returns a string of bytes built from an input
+    #
+    # register_list is an int and value is an int or byte-string
+    #
+    # register_list can be:
+    #   [(register, value), (register, value), (register, value) (etc)]
+    # ------------------------------------------------------------------------------------------------------
+    def build_register_data(self, register_list, value = None):
+
+        data = bytearray()
+
+        # If register is a list of values...
+        if type(register_list) is list:
+
+            # Loop through each tuple in the list of values
+            for register, value in register_list:
+
+                # If value is an integer, convert it to bytes
+                if type(value) is int:
+                    value = value.to_bytes(1, "big")
+
+                # Values must be integers or bytes
+                if not type(value) is bytes:
+                    raise TypeError("register values must be int or bytes")
+
+                # Find out how many bytes long 'value' is
+                value_length = len(value).to_bytes(2, 'big')
+
+                # Append this register definition to our data string
+                data = data + register.to_bytes(1, 'big') + value_length + value
+
+            # We built a byte string from a list of tuples.  Return it
+            return data
+
+
+        # if value is an int, convert it to a byte
+        if type(value) is int:
+            value = value.to_bytes(1, 'big');
+
+        # If value is a byte string, we're done
+        if type(value) is bytes:
+            value_length = len(value).to_bytes(2, 'big')
+            return register_list.to_bytes(1, 'big') + value_length + value
+
+        # We'll get here if 'value' wasn't an integer or byte string
+        raise TypeError("register values must be int or bytes")
+    # ------------------------------------------------------------------------------------------------------
+
 
 
 # ==========================================================================================================
@@ -172,7 +242,7 @@ class Listener(threading.Thread):
             message, _ = self.sock.recvfrom(1024)
 
             # What's the message ID of this message?
-            msg_id = message[0:5]
+            msg_id = message[0:4]
 
             # If this was an unexpected message ID, ignore it
             if msg_id != self.expected_id: continue
