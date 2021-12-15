@@ -102,6 +102,9 @@ class Wifi_I2C:
     # ------------------------------------------------------------------------------------------------------
     def start(self, server_ip, server_port = 0):
 
+        # If this listener was unable to bind to a socket, there's nothing we can do
+        if self.listener.port == None: return False;
+
         # If either of the port numbers is 0, use defaults
         if server_port == 0: server_port = 1182
 
