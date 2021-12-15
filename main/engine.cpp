@@ -264,6 +264,11 @@ void CEngine::handle_cmd_i2c_addr(const uint8_t* data, int data_length)
 
 //=========================================================================================================
 // i2c_read() - Reads data from a device register via I2C
+//
+// Passed: reg    = The register number
+//         width  = Width, in bytes, of the register number
+//         data   = Pointer to where the data we read should be stored
+//         length = How many bytes of the data to read
 //=========================================================================================================
 bool CEngine::i2c_read(int reg, int width, uint8_t* data, int length)
 {
