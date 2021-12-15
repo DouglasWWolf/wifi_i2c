@@ -24,7 +24,7 @@ public:
     bool    write(int i2c_address, int val1, int len1, int val2=0, int len2=0);
 
     // This is a convenience method that calls "perform" to write a buffer full of data to an I2C device
-    bool    write(int i2c_address, int reg, int reg_width, void* data, int data_length);
+    bool    write(int i2c_address, int reg, int reg_width, const void* data, int data_length);
 
     // Call this to perform an arbitrary set of I2C read/write commands
     bool    perform(i2c_cmd_handle_t cmd);

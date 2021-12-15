@@ -159,10 +159,10 @@ class Wifi_I2C:
     # register_list can be:
     #   [(register, value), (register, value), (register, value) (etc)]
     # ------------------------------------------------------------------------------------------------------
-    def write_reg(self, register_list, value = None):
+    def write_reg(self, register_list, value = None, *, reg_width = 1):
 
         # Get the register data as a stream of bytes
-        data = self.build_register_data(register_list, value)
+        data = self.build_register_data(register_list, value, reg_width=reg_width)
 
         # Send the command to the server
         return self.send_message(self.WRITE_REG_CMD, data)
@@ -174,16 +174,19 @@ class Wifi_I2C:
     #
     # Returns: The integer contents of the specified register
     # ------------------------------------------------------------------------------------------------------
-    def read_reg(self, register, length = 1):
+    def read_reg(self, register, length = 1, *, reg_width = 1):
 
-        # Get register as a byte
-        register = register.to_bytes(1, 'big')
+        # Get register as one or more bytes
+        register = register.to_bytes(reg_width, 'big')
+
+        # Convert register-width to a byte
+        reg_width = reg_width.to_bytes(1, 'big')
 
         # Get length as a pair of bytes
         length = length.to_bytes(2, 'big')
 
         # Send the command to the server
-        rc = self.send_message(self.READ_REG_CMD, register + length)
+        rc = self.send_message(self.READ_REG_CMD, reg_width + register + length)
 
         # Convert the value to an integer and hand it to the caller
         return int.from_bytes(rc, 'big')
@@ -290,9 +293,12 @@ class Wifi_I2C:
     # register_list can be:
     #   [(register, value), (register, value), (register, value) (etc)]
     # ------------------------------------------------------------------------------------------------------
-    def build_register_data(self, register_list, value = None):
+    def build_register_data(self, register_list, value = None, *, reg_width=1):
 
         data = bytearray()
+
+        # Get register width as a byte
+        reg_length = reg_width.to_bytes(1, 'big')
 
         # If register is a list of values...
         if type(register_list) is list:
@@ -302,30 +308,37 @@ class Wifi_I2C:
 
                 # If value is an integer, convert it to bytes
                 if type(value) is int:
-                    value = value.to_bytes(1, "big")
+                    value = value.to_bytes(reg_width, "big")
 
                 # Values must be integers or bytes
                 if not type(value) is bytes:
                     raise TypeError("register values must be int or bytes")
 
-                # Find out how many bytes long 'value' is
+                # Get the value length as bytes
                 value_length = len(value).to_bytes(2, 'big')
 
+                # Convert the register into one or more bytes
+                register = register.to_bytes(reg_width, 'big')
+
                 # Append this register definition to our data string
-                data = data + register.to_bytes(1, 'big') + value_length + value
+                data = data + reg_length + register + value_length + value
 
             # We built a byte string from a list of tuples.  Return it
-            return data
+            return bytes(data)
 
 
-        # if value is an int, convert it to a byte
+        # if value is an int, convert it to one or more bytes
         if type(value) is int:
-            value = value.to_bytes(1, 'big');
+            value = value.to_bytes(reg_width, 'big');
 
-        # If value is a byte string, we're done
+        # If value is a byte string, build our return value from it
         if type(value) is bytes:
             value_length = len(value).to_bytes(2, 'big')
-            return register_list.to_bytes(1, 'big') + value_length + value
+
+            # Convert the register number to one or more bytes
+            register = register_list.to_bytes(reg_width, 'big');
+
+            return reg_length + register + value_length + value
 
         # We'll get here if 'value' wasn't an integer or byte string
         raise TypeError("register values must be int or bytes")

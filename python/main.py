@@ -40,10 +40,12 @@ def blinker():
         time.sleep(.25)
 
 
+
 #===========================================================================
 # Execution starts here
 #===========================================================================
 if __name__ == '__main__':
+
     # Create the object that lets us control the I2C device via WiFi
     device = Wifi_I2C()
 

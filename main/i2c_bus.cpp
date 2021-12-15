@@ -107,7 +107,7 @@ bool  CI2C::read(int i2c_address, void* vp_data, int length)
 //
 // Returns: 'true' if the I2C write operation was successful, otherwise 'false'
 //=========================================================================================================
-bool  CI2C::write(int i2c_address, int reg, int reg_width, void* data, int data_length)
+bool  CI2C::write(int i2c_address, int reg, int reg_width, const void* data, int data_length)
 {
     // Get our data pointer as a unsigned char*    
     const uint8_t* to_send = (const uint8_t*) data;
