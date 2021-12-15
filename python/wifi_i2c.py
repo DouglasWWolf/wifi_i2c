@@ -5,8 +5,8 @@ import threading, time, socket
 # ==========================================================================================================
 class Wifi_I2C:
 
-    # This is the ID of the next message we will send
-    message_id = 0
+    # This is the transaction ID of the next message we will send
+    transaction_id = 0
 
     # This is the server address and port
     server = ('', 0)
@@ -83,11 +83,11 @@ class Wifi_I2C:
     # ------------------------------------------------------------------------------------------------------
     def send_message(self, command, data = None):
 
-        # Increment our outgoing message ID so the server knows this is a new msg
-        self.message_id = self.message_id + 1
+        # Increment our outgoing transaction ID so the server knows this is a new msg
+        self.transaction_id = self.transaction_id + 1
 
-        # Get the bytes for the message ID
-        id = self.message_id.to_bytes(4, 'big')
+        # Get the bytes for the transaction ID
+        id = self.transaction_id.to_bytes(4, 'big')
 
         # Build the message we're about to send'
         message = id
@@ -206,13 +206,13 @@ class Listener(threading.Thread):
     # ---------------------------------------------------------------------------
     # expect() - Tells the listening engine to expect an incoming message
     # ---------------------------------------------------------------------------
-    def expect(self, message_id):
+    def expect(self, transaction_id):
 
         # Clear the event.  It will be set if a message arrives
         self.event.clear()
 
         # Save the message ID that we are expecting
-        self.expected_id = message_id
+        self.expected_id = transaction_id
     # ---------------------------------------------------------------------------
 
 

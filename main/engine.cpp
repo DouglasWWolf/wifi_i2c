@@ -34,7 +34,7 @@ static void launch_task(void *pvParameters)
 void CEngine::begin()
 {
     // We don't have a most recent message ID
-    m_have_most_recent_msg_id = false;
+    m_have_most_recent_trans_id = false;
 
     // Create the queue that other threads will post messages to
     m_event_queue = xQueueCreate(50, sizeof(packet_t));
@@ -71,29 +71,29 @@ void CEngine::task()
         // Point to the incoming packet buffer
         unsigned char* in = packet.buffer;
 
-        // Fetch the message ID
-        uint32_t msg_id = 0;
-        msg_id = (msg_id << 8) | *in++;
-        msg_id = (msg_id << 8) | *in++;
-        msg_id = (msg_id << 8) | *in++;
-        msg_id = (msg_id << 8) | *in++;
+        // Fetch transaction ID from this message
+        uint32_t trans_id = 0;
+        trans_id = (trans_id << 8) | *in++;
+        trans_id = (trans_id << 8) | *in++;
+        trans_id = (trans_id << 8) | *in++;
+        trans_id = (trans_id << 8) | *in++;
 
         // If this is a init-sequence message, forget that we have a most recent message ID
-        if (*in == CMD_INIT_SEQ) m_have_most_recent_msg_id = false;
+        if (*in == CMD_INIT_SEQ) m_have_most_recent_trans_id = false;
 
-        // If it's the same as our previously received message ID, ignore this message
-        if (m_have_most_recent_msg_id && msg_id == m_most_recent_msg_id) continue;
+        // If the message we just received as the same transaction ID as the previous one, ignore it
+        if (m_have_most_recent_trans_id && trans_id == m_most_recent_trans_id) continue;
 
-        // This is now our most recent message ID
-        m_most_recent_msg_id = msg_id;
+        // This is now our most recent transactionge ID
+        m_most_recent_trans_id = trans_id;
         
-        // Keep track of the fact that we have a message ID
-        m_have_most_recent_msg_id = true;
+        // Keep track of the fact that we have a transaction ID
+        m_have_most_recent_trans_id = true;
 
         // Fetch the command byte
         unsigned char command = *in++;
 
-        printf("Rcvd msg ID %08X, command %i\n", msg_id, command);
+        printf("Rcvd msg ID %08X, command %i\n", trans_id, command);
 
         reply(command);
 
@@ -114,10 +114,10 @@ void CEngine::reply(unsigned char command)
     unsigned char* out = reply_buffer;
 
     // Output the message ID
-    *out++ = (m_most_recent_msg_id >> 24);
-    *out++ = (m_most_recent_msg_id >> 16);
-    *out++ = (m_most_recent_msg_id >>  8);
-    *out++ = (m_most_recent_msg_id      );
+    *out++ = (m_most_recent_trans_id >> 24);
+    *out++ = (m_most_recent_trans_id >> 16);
+    *out++ = (m_most_recent_trans_id >>  8);
+    *out++ = (m_most_recent_trans_id      );
 
     // Output the command we are responding to
     *out++ = command;

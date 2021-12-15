@@ -36,14 +36,11 @@ public:
 
 protected:
 
-    // A set of bitflags with 1 bit per packet type
-    int     m_rcvd_flags;
-
-    // If this is true, we have a most recent message ID
-    bool        m_have_most_recent_msg_id;
+    // If this is true, we have a most recent transaction ID
+    bool        m_have_most_recent_trans_id;
 
     // This is the most recent message we've received
-    uint32_t    m_most_recent_msg_id;
+    uint32_t    m_most_recent_trans_id;
     
     // This is the handle of the currently running server task
     TaskHandle_t m_task_handle;
