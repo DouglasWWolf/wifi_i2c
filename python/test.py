@@ -35,14 +35,22 @@ def test():
 # Execution starts here
 #===========================================================================
 if __name__ == '__main__':
+    router = False
+
+    if router:
+        local_ip = "192.168.50.196"
+        server_ip = "192.168.50.229"
+    else:
+        local_ip = None
+        server_ip = None
 
     # Create the object that lets us control the I2C device via WiFi
-    device = Wifi_I2C('192.168.50.196')
+    device = Wifi_I2C(local_ip)
 
     # Start communicating .
     #   1st param = IP address of our WiFi interface
     #   2nd param = IP address that the ESP32 is listening on
-    if device.start('192.168.50.229'):
+    if device.start(server_ip):
         print("Started!")
     else:
         print("Failed to connect to ESP32")

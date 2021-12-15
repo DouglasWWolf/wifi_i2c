@@ -100,7 +100,10 @@ class Wifi_I2C:
     # Returns:  True if communication was established
     #           False if something goes awry
     # ------------------------------------------------------------------------------------------------------
-    def start(self, server_ip, server_port = 0):
+    def start(self, server_ip = None, server_port = 0):
+
+        # If no IP address was provided, assume we're connecing in AP mode
+        if server_ip == None: server_ip = '192.168.4.1'
 
         # If this listener was unable to bind to a socket, there's nothing we can do
         if self.listener.port == None: return False;
@@ -377,7 +380,10 @@ class Listener(threading.Thread):
     expected_id = None
     event       = None
 
-    def __init__(self, local_ip):
+    def __init__(self, local_ip=None):
+
+        # If no IP address was provided, assume we're connecing in AP mode
+        if local_ip == None: local_ip = '192.168.4.2'
 
         # Call the threading base class constructor
         threading.Thread.__init__(self)
