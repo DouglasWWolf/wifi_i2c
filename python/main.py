@@ -16,6 +16,10 @@ try:
     fpga.write_reg(0x15, 12)
     config = [(0x10, 10), (0x20, 20), (0x30, 30), (0x40, 40)]
     fpga.write_reg(config)
+
+    val = fpga.read_reg(0x10);
+    print("Read", val)
+
 except Wifi_I2C_Ex as e:
     print(e.string)
 

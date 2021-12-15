@@ -28,7 +28,6 @@ public:
 
 public:
 
-
     // This is the code that executes in it's own thread
     void    task();
 
@@ -38,12 +37,17 @@ protected:
     void        reply(int error_code, const uint8_t* data = nullptr, int data_length = 0);
     void        reply(int error_code, int p1);
 
-    // This handles CMD_WRITE_REG commands
-    void        handle_cmd_write_reg(const uint8_t* data, int data_length);
+    // Command handlers
+    void        handle_cmd_write_reg(const uint8_t* data, int data_length);  /* CMD_WRITE */
+    void        handle_cmd_read_reg (const uint8_t* data, int data_length);  /* CMD_READ  */
+
 
     // Call this to write to a device register via I2C
     bool        i2c_write(int reg, const uint8_t* data, int length);
 
+    // Call this to read a device register via I2C
+    bool        i2c_read(int reg, uint8_t* data, int length);
+        
     // If this is true, we have a most recent transaction ID
     bool        m_have_most_recent_trans_id;
 

@@ -14,6 +14,7 @@ class Wifi_I2C_Ex(Exception):
     ERR_NONE          = 0
     ERR_NOT_ENUF_DATA = 1
     ERR_I2C_WRITE     = 2
+    ERR_I2C_READ      = 3
 
     def __init__(self, message):
         self.trans_id = message[0:3]
@@ -35,6 +36,11 @@ class Wifi_I2C_Ex(Exception):
         if self.error_code == self.ERR_I2C_WRITE:
             self.string = ("On register %i, I2C write error" % self.register)
             return
+
+        if self.error_code == self.ERR_I2C_READ:
+            self.string = ("On register %i, I2C read error" % self.register)
+            return
+
 
         self.string = "Unknown error: "+str(self.error_code)
 # ==========================================================================================================
@@ -59,6 +65,7 @@ class Wifi_I2C:
     # These are all of the commands we can send to the server
     INIT_SEQ_CMD  = 0
     WRITE_REG_CMD = 1
+    READ_REG_CMD  = 2
 
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
@@ -122,6 +129,28 @@ class Wifi_I2C:
         # Send the command to the server
         return self.send_message(self.WRITE_REG_CMD, data)
     # ------------------------------------------------------------------------------------------------------
+
+
+    # ------------------------------------------------------------------------------------------------------
+    # read_reg() - Reads a value from a register
+    #
+    # Returns: The integer contents of the specified register
+    # ------------------------------------------------------------------------------------------------------
+    def read_reg(self, register, length = 1):
+
+        # Get register as a byte
+        register = register.to_bytes(1, 'big')
+
+        # Get length as a pair of bytes
+        length = length.to_bytes(2, 'big')
+
+        # Send the command to the server
+        rc = self.send_message(self.READ_REG_CMD, register + length)
+
+        # Convert the value to an integer and hand it to the caller
+        return int.from_bytes(rc, 'big')
+    # ------------------------------------------------------------------------------------------------------
+
 
 
 

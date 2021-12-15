@@ -15,7 +15,8 @@ enum error_code_t
 {
     ERR_NONE          = 0,
     ERR_NOT_ENUF_DATA = 1,
-    ERR_I2C_WRITE     = 2
+    ERR_I2C_WRITE     = 2,
+    ERR_I2C_READ      = 3
 };
 
 //=========================================================================================================
@@ -115,6 +116,10 @@ void CEngine::task()
             case CMD_WRITE_REG:
                 handle_cmd_write_reg(in, data_length);
                 break;
+
+            case CMD_READ_REG:
+                handle_cmd_read_reg(in, data_length);
+                break;
         }
     }
 
@@ -164,6 +169,53 @@ void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
     reply(ERR_NONE);
 }
 //=========================================================================================================
+
+
+
+
+//=========================================================================================================
+// handle_cmd_write_read() - Writes data to one or more registers on the I2C device
+//=========================================================================================================
+unsigned char read_buffer[1024];
+void CEngine::handle_cmd_read_reg(const uint8_t* data, int data_length)
+{
+    // Fetch the register number we're reading from
+    int reg = *data++;
+
+    // Fetch the length of the data we're going to read from the register
+    int reg_length = (data[0] << 8) | data[1];
+    data += 2;
+
+    // If we can't read from the I2C, it's an error
+    if (!i2c_read(reg, read_buffer, reg_length))
+    {
+        reply(ERR_I2C_READ, reg);
+        return;
+    }
+
+    // Tell the client that everything worked
+    reply(ERR_NONE, read_buffer, reg_length);
+}
+//=========================================================================================================
+
+
+
+
+//=========================================================================================================
+// i2c_read() - Reads data from a device register via I2C
+//=========================================================================================================
+bool CEngine::i2c_read(int reg, uint8_t* data, int length)
+{
+    printf("Reading %i bytes from register 0x%02x\n", length, reg);
+
+    for (int i=0; i<length;++i) data[i] = 0x80 + i;
+
+    if (reg == 50) return false;
+
+    return true;
+}
+//=========================================================================================================
+
 
 
 
