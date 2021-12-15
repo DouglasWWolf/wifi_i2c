@@ -38,9 +38,9 @@ protected:
     void        reply(int error_code, int p1);
 
     // Command handlers
-    void        handle_cmd_write_reg(const uint8_t* data, int data_length);  /* CMD_WRITE */
-    void        handle_cmd_read_reg (const uint8_t* data, int data_length);  /* CMD_READ  */
-
+    void        handle_cmd_write_reg  (const uint8_t* data, int data_length);    /* CMD_WRITE       */
+    void        handle_cmd_read_reg   (const uint8_t* data, int data_length);    /* CMD_READ        */
+    void        handle_cmd_client_port(const uint8_t* data, int data_length);    /* CMD_CLIENT_PORT */
 
     // Call this to write to a device register via I2C
     bool        i2c_write(int reg, const uint8_t* data, int length);

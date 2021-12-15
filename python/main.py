@@ -3,7 +3,7 @@ from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
 
 fpga = Wifi_I2C()
 
-rc = fpga.start('192.168.50.196', 0, '192.168.50.229', 0)
+rc = fpga.start('192.168.50.196', 12345, '192.168.50.229', 0)
 if rc:
     print("Started!")
 else:
@@ -18,7 +18,12 @@ try:
     fpga.write_reg(config)
 
     val = fpga.read_reg(0x10);
-    print("Read", val)
+    print("Read from 0x10", val)
+
+    val = fpga.read_reg(50)
+    print("Read from 0x50", val)
+
+
 
 except Wifi_I2C_Ex as e:
     print(e.string)

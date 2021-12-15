@@ -63,9 +63,10 @@ class Wifi_I2C:
     listener = None
 
     # These are all of the commands we can send to the server
-    INIT_SEQ_CMD  = 0
-    WRITE_REG_CMD = 1
-    READ_REG_CMD  = 2
+    INIT_SEQ_CMD     = 0
+    WRITE_REG_CMD    = 1
+    READ_REG_CMD     = 2
+    CLIENT_PORT_CMD  = 3
 
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
@@ -101,10 +102,10 @@ class Wifi_I2C:
         # Create a socket for sending messages
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        # Try an "Init Sequence" transaction
+        # Tell the server what local port to send responses to
         reply = None
         try:
-            reply = self.send_message(self.INIT_SEQ_CMD)
+            reply = self.set_client_port(local_port)
         except Exception:
             return False
 
@@ -155,9 +156,24 @@ class Wifi_I2C:
 
 
 
+
     # <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     # From here on down are methods that are private to this class
     # <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    # ------------------------------------------------------------------------------------------------------
+    # set_client_port() - Tells the server which UDP port to send responses to
+    # ------------------------------------------------------------------------------------------------------
+    def set_client_port(self, port):
+
+        # Convert port number to bytes
+        port = port.to_bytes(2, 'big')
+
+        # Send the command to the server
+        return self.send_message(self.CLIENT_PORT_CMD, port)
+    # ------------------------------------------------------------------------------------------------------
+
+
 
     # ------------------------------------------------------------------------------------------------------
     # send_message() - Sends a message to the server, making multiple attempts to get a reply

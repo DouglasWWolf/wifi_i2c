@@ -67,6 +67,9 @@ void CUDPServer::task()
 {
     char source_ip[20];
 
+    // By default, we'll send messages back to the client on the same port we're listening on
+    m_client_port = SERVER_PORT;
+
     // How long is the buffer that will hold the address of the sender?
     socklen_t source_length = sizeof(source_addr);
     
@@ -197,7 +200,7 @@ void CUDPServer::stop()
 void CUDPServer::reply(void* data, int length)
 {
     // We want to send our reply back to the same port number we're listening on
-    sockaddr_source.sin_port = htons(SERVER_PORT);
+    sockaddr_source.sin_port = htons(m_client_port);
 
     // Send the message back
     int err = sendto(sock, data, length, 0, (struct sockaddr *)&source_addr, sizeof source_addr);

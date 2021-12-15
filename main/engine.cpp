@@ -6,9 +6,10 @@
 
 enum command_t
 {
-    CMD_INIT_SEQ  = 0,
-    CMD_WRITE_REG = 1,
-    CMD_READ_REG  = 2    
+    CMD_INIT_SEQ    = 0,
+    CMD_WRITE_REG   = 1,
+    CMD_READ_REG    = 2,
+    CMD_CLIENT_PORT = 3    
 };
 
 enum error_code_t
@@ -88,8 +89,10 @@ void CEngine::task()
         trans_id = (trans_id << 8) | *in++;
         trans_id = (trans_id << 8) | *in++;
 
+        printf("Recvd trans %i, cmd %i\n", trans_id, *in);
+
         // If this is a init-sequence message, forget that we have a most recent message ID
-        if (*in == CMD_INIT_SEQ) m_have_most_recent_trans_id = false;
+        if (*in == CMD_INIT_SEQ || *in == CMD_CLIENT_PORT) m_have_most_recent_trans_id = false;
 
         // If the message we just received as the same transaction ID as the previous one, ignore it
         if (m_have_most_recent_trans_id && trans_id == m_most_recent_trans_id) continue;
@@ -119,6 +122,10 @@ void CEngine::task()
 
             case CMD_READ_REG:
                 handle_cmd_read_reg(in, data_length);
+                break;
+
+            case CMD_CLIENT_PORT:
+                handle_cmd_client_port(in, data_length);
                 break;
         }
     }
@@ -200,6 +207,23 @@ void CEngine::handle_cmd_read_reg(const uint8_t* data, int data_length)
 
 
 
+//=========================================================================================================
+// handle_cmd_client_port() - Sets the UDP port for replying to the client
+//=========================================================================================================
+void CEngine::handle_cmd_client_port(const uint8_t* data, int data_length)
+{
+    // Fetch the port number
+    int udp_port = (data[0] << 8) | data[1];
+
+    // Tell the server what client port to send responses to
+    UDPServer.set_client_port(udp_port);
+
+    // Tell the client that everything worked
+    reply(ERR_NONE);
+}
+//=========================================================================================================
+
+
 
 //=========================================================================================================
 // i2c_read() - Reads data from a device register via I2C
@@ -210,7 +234,7 @@ bool CEngine::i2c_read(int reg, uint8_t* data, int length)
 
     for (int i=0; i<length;++i) data[i] = 0x80 + i;
 
-    if (reg == 50) return false;
+    if (reg == 0x50) return false;
 
     return true;
 }
