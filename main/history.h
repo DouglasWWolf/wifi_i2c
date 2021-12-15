@@ -9,3 +9,10 @@
 // 1000  12-Dec-21  DWW  Initial creation
 //=========================================================================================================
 #define FW_VERSION "1000" 
+
+/*
+
+Add debug
+Add discovery feature
+Add some sort of status counts that can be queried
+*/
