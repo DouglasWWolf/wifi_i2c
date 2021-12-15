@@ -115,7 +115,7 @@ void CEngine::task()
         switch(m_command)
         {
             case CMD_INIT_SEQ:
-                reply(0);
+                reply(ERR_NONE);
                 break;
             
             case CMD_WRITE_REG:

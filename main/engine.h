@@ -4,6 +4,19 @@
 #pragma once
 #include "common.h"
 
+/*
+Packet formats:
+
+All packets begin with 
+
+4 bytes of transaction ID
+1 byte  of command ID
+
+
+
+*/
+
+
 
 //=========================================================================================================
 // This is the data descriptor that describes an incoming packet
