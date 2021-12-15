@@ -62,7 +62,7 @@ if __name__ == '__main__':
     device = Wifi_I2C(local_ip)
 
     # Start communicating .
-    # Parameter is the  IP address that the ESP32 is listening on
+    # Parameter is the IP address that the ESP32 is listening on
     if device.start(server_ip):
         print("Started!")
     else:
