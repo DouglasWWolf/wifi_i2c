@@ -11,7 +11,8 @@ enum command_t
     CMD_I2C_ADDR    = 2,    
     CMD_WRITE_REG   = 3,
     CMD_READ_REG    = 4,
-    CMD_GET_FWREV   = 5
+    CMD_GET_FWREV   = 5,
+    CMD_GET_RSSI    = 6
 };
 
 enum error_code_t
@@ -141,6 +142,11 @@ void CEngine::task()
             case CMD_GET_FWREV:
                 reply(ERR_NONE, atoi(FW_VERSION));
                 break;
+            
+            case CMD_GET_RSSI:
+                reply(ERR_NONE, System.rssi());
+                break;
+
         }
     }
 

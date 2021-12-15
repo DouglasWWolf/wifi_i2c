@@ -5,7 +5,9 @@ from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
 def test():
 
     fwrev = device.get_firmware_rev()
+    rssi   = device.get_rssi();
     print("Firmware revision is", fwrev)
+    print("Rssi is", rssi)
 
     DIRECTION = 0x00    # MCP23008 pin direction register
     GPIO      = 0x09    # MCP23008 input/output register

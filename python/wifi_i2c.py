@@ -80,7 +80,7 @@ class Wifi_I2C:
     WRITE_REG_CMD    = 3
     READ_REG_CMD     = 4
     GET_FWREV_CMD    = 5
-
+    GET_RSSI_CMD     = 6
 
     # ------------------------------------------------------------------------------------------------------
     # start() - Create sockets and starts the thread that listens for incoming messages
@@ -205,6 +205,19 @@ class Wifi_I2C:
 
         # Convert the value to an integer and hand it to the caller
         return int.from_bytes(rc, 'big')
+    # ------------------------------------------------------------------------------------------------------
+
+
+    # ------------------------------------------------------------------------------------------------------
+    # get_rssi() - Fetches the Wi-Fi signal strength that the server sees
+    # ------------------------------------------------------------------------------------------------------
+    def get_rssi(self):
+
+        # Send the request to the server
+        rc = self.send_message(self.GET_RSSI_CMD)
+
+        # Convert the value to an integer and hand it to the caller
+        return int.from_bytes(rc, 'big', signed = True)
     # ------------------------------------------------------------------------------------------------------
 
 
