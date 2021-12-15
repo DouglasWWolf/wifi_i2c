@@ -20,7 +20,7 @@ try:
     val = fpga.read_reg(0x10);
     print("Read from 0x10", val)
 
-    val = fpga.read_reg(50)
+    val = fpga.read_reg(0x50)
     print("Read from 0x50", val)
 
 
