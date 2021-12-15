@@ -87,11 +87,10 @@ class Wifi_I2C:
     # Returns:  True if communication was established
     #           False if something goes awry
     # ------------------------------------------------------------------------------------------------------
-    def start(self, local_ip, local_port, server_ip, server_port):
+    def start(self, local_ip, server_ip, server_port):
 
         # If either of the port numbers is 0, use defaults
         if server_port == 0: server_port = 1182
-        if local_port == 0: local_port = server_port
 
         # Save our server information
         self.server = (server_ip, server_port)
@@ -103,10 +102,19 @@ class Wifi_I2C:
         self.listener.sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
         # Bind the listening socket
-        try:
-            self.listener.sock.bind((local_ip, local_port))
-        except OSError:
-            print("Port %i is locked by some other program" % local_port)
+        bound = False
+        for i in range(0, 300):
+            local_port = 30000 + i
+            try:
+                self.listener.sock.bind((local_ip, local_port))
+                bound = True
+            except OSError:
+                continue
+            break
+
+        # If we were unable to bind the socket to a port, complain about it
+        if not bound:
+            print("Can't find any available port to bind to")
             return False
 
         # Tell the listener object to start listening

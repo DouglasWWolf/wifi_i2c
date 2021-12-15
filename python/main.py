@@ -3,7 +3,7 @@ from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
 
 device = Wifi_I2C()
 
-if device.start('192.168.50.196', 12345, '192.168.50.229', 0):
+if device.start('192.168.50.196', '192.168.50.229', 0):
     print("Started!")
 else:
     print("Failed to connect to ESP32")
