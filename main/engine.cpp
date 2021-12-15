@@ -21,6 +21,9 @@ enum error_code_t
     ERR_I2C_READ      = 3
 };
 
+// Our virtual device has 256 1 byte registers
+unsigned char virtual_device[256];
+
 //=========================================================================================================
 // launch_task() - Calls the "task()" routine in the specified object
 //
@@ -110,10 +113,6 @@ void CEngine::task()
 
         // The transaction ID and command took up 5 bytes.  This is how much is left
         int data_length = packet.length - 5;
-
-        printf("Command: %i", m_command);
-        for (int i=0; i<data_length; ++i) printf("[%02X] ", in[i]);
-        printf("\n");
 
         // Handle each type of command we know about
         switch(m_command)
@@ -303,6 +302,17 @@ bool CEngine::i2c_read(int reg, int width, uint8_t* data, int length)
 {
     bool status;
 
+    // If we're reading from our virtual device
+    if (m_i2c_address == 0)
+    {
+        for (int i = 0; i<length; ++i)
+        {
+            int index = (reg + i) & 0xFF;
+            data[i] = virtual_device[index];
+        }        
+        return true;        
+    }
+
     // Write the address of the byte that we wish to read
     status = I2C.write(m_i2c_address, reg, width);
 
@@ -336,6 +346,18 @@ bool CEngine::i2c_read(int reg, int width, uint8_t* data, int length)
 //=========================================================================================================
 bool CEngine::i2c_write(int reg, int width, const uint8_t* data, int length)
 {
+    // If we're writing to our virtual device
+    if (m_i2c_address == 0)
+    {
+        for (int i = 0; i<length; ++i)
+        {
+            int index = (reg + i) & 0xFF;
+            virtual_device[index] = data[i];
+        }        
+        return true;        
+    }
+
+
     // Write to the I2C device
     bool status = I2C.write(m_i2c_address, reg, width, data, length);
 
