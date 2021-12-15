@@ -12,11 +12,7 @@ All packets begin with
 4 bytes of transaction ID
 1 byte  of command ID
 
-
-
 */
-
-
 
 //=========================================================================================================
 // This is the data descriptor that describes an incoming packet
@@ -48,19 +44,24 @@ protected:
 
     // Sends a reply to the most recently received message
     void        reply(int error_code, const uint8_t* data = nullptr, int data_length = 0);
-    void        reply(int error_code, int p1);
+    void        reply(int error_code, int32_t value, int width = 4);
 
     // Command handlers
     void        handle_cmd_write_reg  (const uint8_t* data, int data_length);    /* CMD_WRITE       */
     void        handle_cmd_read_reg   (const uint8_t* data, int data_length);    /* CMD_READ        */
     void        handle_cmd_client_port(const uint8_t* data, int data_length);    /* CMD_CLIENT_PORT */
     void        handle_cmd_i2c_addr   (const uint8_t* data, int data_length);    /* CMD_I2C_ADDR    */
+    void        handle_cmd_get_fwrev  (const uint8_t* data, int data_length);    /* CMD_GET_FWREV   */
+    
 
     // Call this to write to a device register via I2C
     bool        i2c_write(int reg, int reg_width, const uint8_t* data, int length);
 
     // Call this to read a device register via I2C
     bool        i2c_read(int reg, int reg_width, uint8_t* data, int length);
+
+    // Sends out a reply with the specified integer value
+    bool        reply_with_value(int32_t value, int width);
         
     // If this is true, we have a most recent transaction ID
     bool        m_have_most_recent_trans_id;

@@ -79,6 +79,7 @@ class Wifi_I2C:
     I2C_ADDR_CMD     = 2
     WRITE_REG_CMD    = 3
     READ_REG_CMD     = 4
+    GET_FWREV_CMD    = 5
 
 
     # ------------------------------------------------------------------------------------------------------
@@ -187,6 +188,20 @@ class Wifi_I2C:
 
         # Send the command to the server
         rc = self.send_message(self.READ_REG_CMD, reg_width + register + length)
+
+        # Convert the value to an integer and hand it to the caller
+        return int.from_bytes(rc, 'big')
+    # ------------------------------------------------------------------------------------------------------
+
+
+
+    # ------------------------------------------------------------------------------------------------------
+    # get_firmware_rev() - Fetches and returns the server firmware revision
+    # ------------------------------------------------------------------------------------------------------
+    def get_firmware_rev(self):
+
+        # Send the request to the server
+        rc = self.send_message(self.GET_FWREV_CMD)
 
         # Convert the value to an integer and hand it to the caller
         return int.from_bytes(rc, 'big')

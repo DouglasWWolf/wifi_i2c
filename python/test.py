@@ -4,6 +4,9 @@ from wifi_i2c import Wifi_I2C, Wifi_I2C_Ex
 
 def test():
 
+    fwrev = device.get_firmware_rev()
+    print("Firmware revision is", fwrev)
+
     DIRECTION = 0x00    # MCP23008 pin direction register
     GPIO      = 0x09    # MCP23008 input/output register
 
@@ -18,6 +21,7 @@ def test():
 
     device.write_reg(10, b'\x01\x03\x05\x07')
 
+    print()
     for i in range(0,10):
         reg = i + 10
         val = device.read_reg(reg, 1)

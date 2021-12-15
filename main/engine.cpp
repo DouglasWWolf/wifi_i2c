@@ -2,7 +2,7 @@
 // engine.cpp - Implements the engine that handles the incoming UDP packets
 //=========================================================================================================
 #include "globals.h"
-
+#include "history.h"
 
 enum command_t
 {
@@ -10,7 +10,8 @@ enum command_t
     CMD_CLIENT_PORT = 1,
     CMD_I2C_ADDR    = 2,    
     CMD_WRITE_REG   = 3,
-    CMD_READ_REG    = 4
+    CMD_READ_REG    = 4,
+    CMD_GET_FWREV   = 5
 };
 
 enum error_code_t
@@ -136,6 +137,10 @@ void CEngine::task()
             case CMD_I2C_ADDR:
                 handle_cmd_i2c_addr(in, data_length);
                 break;
+            
+            case CMD_GET_FWREV:
+                reply(ERR_NONE, atoi(FW_VERSION));
+                break;
         }
     }
 
@@ -213,7 +218,7 @@ void CEngine::handle_cmd_write_reg(const uint8_t* data, int data_length)
 
 
 //=========================================================================================================
-// handle_cmd_read_reg() - Writes data to one or more registers on the I2C device
+// handle_cmd_read_reg() - Reads data from one or more registers on the I2C device
 //
 // Passed:  data        = Pointer to buffer that says how many bytes to read
 //          data_length = Length of that buffer (we don't need it)
@@ -255,6 +260,26 @@ void CEngine::handle_cmd_read_reg(const uint8_t* data, int data_length)
 //=========================================================================================================
 
 
+//=========================================================================================================
+// reply() - Replies with a single integer data value
+//=========================================================================================================
+void CEngine::reply(int error_code, int32_t value, int width)
+{
+    unsigned char bytes[4], *out = bytes;
+
+    // Stuff the value into the "bytes" buffer, MSB first    
+    if (width >= 4) *out++ = (value >> 24);
+    if (width >= 3) *out++ = (value >> 16);
+    if (width >= 2) *out++ = (value >>  8);
+    if (width >= 1) *out++ = (value >>  0);
+
+    // Tell the client that everything worked
+    reply(error_code, bytes, (out - bytes));
+}
+//=========================================================================================================
+
+
+
 
 //=========================================================================================================
 // handle_cmd_client_port() - Sets the UDP port for replying to the client
@@ -286,6 +311,7 @@ void CEngine::handle_cmd_i2c_addr(const uint8_t* data, int data_length)
     reply(ERR_NONE);
 }
 //=========================================================================================================
+
 
 
 
@@ -377,13 +403,6 @@ bool CEngine::i2c_write(int reg, int width, const uint8_t* data, int length)
 // reply() - Sends a reply to the host
 //=========================================================================================================
 unsigned char reply_buffer[1024];
-
-void CEngine::reply(int error_code, int p1)
-{
-    unsigned char data = (unsigned char)p1;
-    reply(error_code, &data, 1);
-}
-
 void CEngine::reply(int error_code, const uint8_t* data, int data_len)
 {
     // Point to the reply buffer
