@@ -87,7 +87,9 @@ class Wifi_I2C:
     # Returns:  True if communication was established
     #           False if something goes awry
     # ------------------------------------------------------------------------------------------------------
-    def start(self, local_ip, server_ip, server_port):
+    def start(self, local_ip, server_ip, server_port = 0):
+
+        local_port = 0
 
         # If either of the port numbers is 0, use defaults
         if server_port == 0: server_port = 1182
@@ -123,6 +125,7 @@ class Wifi_I2C:
         # Create a socket for sending messages
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+        print("Bound to local port", local_port)
         # Tell the server what local port to send responses to
         reply = None
         try:
