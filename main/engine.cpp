@@ -176,7 +176,7 @@ void CEngine::handle_cmd_write_reg(int width, uint8_t* data, int data_length)
         }
 
         // If we can't write to the I2C, it's an error
-        if (!i2c_write(reg, data, reg_length))
+        if (!i2c_write(reg, width, data, reg_length))
         {
             reply(ERR_I2C_WRITE, reg);
             return;
@@ -215,7 +215,7 @@ void CEngine::handle_cmd_read_reg(int width, const uint8_t* data, int data_lengt
     reg_length = (reg_length << 8) | *data++;
 
     // If we can't read from the I2C, it's an error
-    if (!i2c_read(reg, read_buffer, reg_length))
+    if (!i2c_read(reg, 1,read_buffer, reg_length))
     {
         reply(ERR_I2C_READ, reg);
         return;
@@ -267,12 +267,12 @@ void CEngine::handle_cmd_i2c_addr(const uint8_t* data, int data_length)
 //=========================================================================================================
 // i2c_read() - Reads data from a device register via I2C
 //=========================================================================================================
-bool CEngine::i2c_read(int reg, uint8_t* data, int length)
+bool CEngine::i2c_read(int reg, int width, uint8_t* data, int length)
 {
     bool status;
 
     // Write the address of the byte that we wish to read
-    status = I2C.write(m_i2c_address, reg, 1);
+    status = I2C.write(m_i2c_address, reg, width);
 
     // If that fails, complain
     if (!status) 
@@ -302,15 +302,12 @@ bool CEngine::i2c_read(int reg, uint8_t* data, int length)
 //=========================================================================================================
 // i2c_write() - Writes data to a device register via I2C
 //=========================================================================================================
-bool CEngine::i2c_write(int reg, uint8_t* data, int length)
+bool CEngine::i2c_write(int reg, int width, uint8_t* data, int length)
 {
     bool status;
 
-    printf("Writing 0x%02X to register 0x%02X\n", *data, reg);
-
-
     // Write to the I2C device
-    status = I2C.write(m_i2c_address, reg, 1, data, length);
+    status = I2C.write(m_i2c_address, reg, width, data, length);
 
     // If that fails, complain
     if (!status) 

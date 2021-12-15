@@ -44,10 +44,10 @@ protected:
     void        handle_cmd_i2c_addr   (const uint8_t* data, int data_length);               /* CMD_I2C_ADDR    */
 
     // Call this to write to a device register via I2C
-    bool        i2c_write(int reg, uint8_t* data, int length);
+    bool        i2c_write(int reg, int width, uint8_t* data, int length);
 
     // Call this to read a device register via I2C
-    bool        i2c_read(int reg, uint8_t* data, int length);
+    bool        i2c_read(int reg, int width, uint8_t* data, int length);
         
     // If this is true, we have a most recent transaction ID
     bool        m_have_most_recent_trans_id;
