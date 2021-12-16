@@ -8,6 +8,7 @@ def test():
     rssi   = device.get_rssi();
     print("Firmware revision is", fwrev)
     print("Rssi is", rssi)
+    device.send_message(0x22)
 
     DIRECTION = 0x00    # MCP23008 pin direction register
     GPIO      = 0x09    # MCP23008 input/output register

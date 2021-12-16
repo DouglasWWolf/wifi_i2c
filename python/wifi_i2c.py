@@ -84,6 +84,7 @@ class Wifi_I2C_Ex(Exception):
     ERR_I2C_WRITE     = 2
     ERR_I2C_READ      = 3
     ERR_CONN_TIMEOUT  = 99
+    ERR_UNSUPPORTED   = 255
 
     def __init__(self, message):
 
@@ -117,6 +118,9 @@ class Wifi_I2C_Ex(Exception):
             self.string = ("On register %i, I2C read error" % self.register)
             return
 
+        if self.error_code == self.ERR_UNSUPPORTED:
+            self.string = ("Unsupported command %i" % self.command)
+            return
 
         self.string = "Unknown error: "+str(self.error_code)
 # ==========================================================================================================

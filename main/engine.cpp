@@ -20,7 +20,8 @@ enum error_code_t
     ERR_NONE          = 0,
     ERR_NOT_ENUF_DATA = 1,
     ERR_I2C_WRITE     = 2,
-    ERR_I2C_READ      = 3
+    ERR_I2C_READ      = 3,
+    ERR_UNSUPPORTED   = 255
 };
 
 // Our virtual device has 256 1 byte registers
@@ -145,6 +146,10 @@ void CEngine::task()
             
             case CMD_GET_RSSI:
                 reply(ERR_NONE, System.rssi());
+                break;
+            
+            default:
+                reply(ERR_UNSUPPORTED);
                 break;
 
         }
