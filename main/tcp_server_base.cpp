@@ -472,6 +472,9 @@ void CTCPServerBase::hard_shutdown()
 //========================================================================================================= 
 void CTCPServerBase::task()
 {
+    // Tell the outside world that we're starting the server
+    printf(">>>>>>>  Starting TCP server on port %i <<<<<<<\n", m_server_port);
+    
     // Ensure that sockets are closed
     hard_shutdown();
 
