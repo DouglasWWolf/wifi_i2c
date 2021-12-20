@@ -1,52 +1,45 @@
-//=========================================================================================================
-// tcp_server.h - Defines a TCP socket server task
-//
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-// <><>  THIS CODE IS INTENDED TO WORK ACROSS FIRMWARE GENERATIONS   <><>
-// <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-//
-//=========================================================================================================
 #pragma once
 #include "common.h"
+#include "tcp_server_base.h"
 
-class CTCPServer
+
+//=========================================================================================================
+// TCP Server - Handles incoming commands from a TCP socket
+//=========================================================================================================
+class CTCPServer : public CTCPServerBase
 {
 public:
 
-    CTCPServer() {m_task_handle = nullptr;}
-
-    // Call this to start the server task
-    void    start();
-
-    // Call this to stop the server task
-    void    stop();
-
-    // Returns 'true' if the server has a client connected
-    bool    has_client();
-
-    // Turns Nagle's algorithm on or off
-    void    set_nagling(bool flag);
-
-    //----------------------------------------------
-    // These are for use by command handlers
-    //----------------------------------------------
-    void    pass(const char* fmt , ...);
-    void    pass();
-    void    send(const char* fmt, ...);
-    bool    read(unsigned char* p_data, int count);
-    bool    write(unsigned char* p_data, int count);
-    void    drain_input();
-    bool    is_halted_by_user();
-    void    close();
-    //----------------------------------------------
-
-public:
-    
-    // This is the task that serves as our TCP server.
-    void    tcp_server_task();
+    // Constructor - just calls the base class
+    CTCPServer(int port) : CTCPServerBase(port) {}
 
 protected:
 
-    // This is the handle of the currently running server task
-    TaskHandle_t m_task_handle;
+
+    // ---------------  Handlers for specific commands ------------------
+    // ------------  The bool return values are meaningless  ------------
+    bool    handle_fwrev();
+    bool    handle_freeram();
+    bool    handle_reboot();
+    bool    handle_time();
+    bool    handle_nvget();
+    bool    handle_nvset();
+    bool    handle_rssi();
+    bool    handle_wifi();
+    bool    handle_stack();
+    // ------------------------------------------------------------------
+
+
+protected:  
+
+    //  A custom failure code
+    bool    fail_unsupp() {return fail("UNSUPP");}
+
+    // Whenever a command comes in, this top-level handler gets called
+    void    on_command(const char* command);
+
 };
+//=========================================================================================================
+
+
+
