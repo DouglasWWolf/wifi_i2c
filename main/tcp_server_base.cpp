@@ -50,7 +50,7 @@ void CTCPServerBase::start()
     if (m_task_handle) return;
 
     // Create the task
-    xTaskCreatePinnedToCore(launch_task, "tcp_server", 4096, this, TASK_PRIO_TCP, &m_task_handle, TASK_CPU);
+    xTaskCreatePinnedToCore(launch_task, "tcp_server", 3000, this, TASK_PRIO_TCP, &m_task_handle, TASK_CPU);
 }
 //=========================================================================================================
 
@@ -194,6 +194,8 @@ void CTCPServerBase::handle_new_message()
     // Call the top level command handler
     on_command(first_token);
 
+    // Keep track of the high-water mark on the stack for this thread
+    StackMgr.record_hwm(TASK_IDX_TCP_SERVER);
 }
 //=========================================================================================================
 
